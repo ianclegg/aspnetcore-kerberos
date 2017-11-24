@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices.ComTypes;
+using System.Security.Principal;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.GssKerberos.Disposables;
 using Microsoft.AspNetCore.Authentication.GssKerberos.Native;
@@ -14,8 +16,14 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
         public static void main()
         {
 
+            var initiator = new GssInitiator(
+                username: "<username>",
+                password: "<password>",
+                spn: "HTTP/orion.testweb.bp.com");
+            var token = initiator.Initiate(null);
+
+            // Credentials
             var acceptor = new GssAcceptor("HTTP/orion.testweb.bp.com@BP1.AD.BP.COM", 0);
-            var token = new byte[1];
             acceptor.Accept(token);
 
             //if(acceptor.)

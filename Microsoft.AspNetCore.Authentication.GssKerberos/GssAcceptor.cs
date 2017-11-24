@@ -48,7 +48,6 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                     ref actualMechanims,
                     out actualExpiry);
                 
-                Console.WriteLine("ok");
 
                 if (majorStatus != 0)
                     throw new GssException(majorStatus, minorStatus, GssSpnegoMechOidDesc);

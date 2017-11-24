@@ -135,6 +135,20 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
             ref GssOidDesc acutualMech,
             out uint expiryTime);
 
+        [DllImport("libgssapi_krb5.so.2", EntryPoint = "gss_acquire_cred_with_password")]
+        internal static extern uint gss_acquire_cred_with_password(
+            out uint minorStatus,
+            IntPtr desiredName,
+            ref GssBufferDescStruct password,
+            uint timeRequired,
+            ref GssOidSet desiredMechanisms,
+            int credentialUsage,
+            ref IntPtr credentialHandle,
+            ref GssOidDesc acutualMech,
+            out uint expiryTime);
+
+
+
 
         /// <summary>
         /// Initiates a GSS-API security context with a peer application
