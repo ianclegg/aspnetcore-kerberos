@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Linq;
+
 using System.Runtime.InteropServices;
 using Microsoft.AspNetCore.Authentication.GssKerberos.Disposables;
 using static Microsoft.AspNetCore.Authentication.GssKerberos.Native.NativeMethods;
@@ -7,7 +9,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
 {
     public class GssAcceptor
     {
-        private Disposable<IntPtr> acceptorName;
+        private IntPtr acceptorName;
         private IntPtr acceptorCredentials;
         private IntPtr context;
         private IntPtr sourceName;
@@ -25,26 +27,31 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                 majorStatus = gss_import_name(
                     out minorStatus,
                     ref gssNameBuffer.Value,
-                    ref GssKrb5MechOidDescStruct,
+                    ref GssNtPrincipalName,
                     out var acceptorName
                 );
                 if (majorStatus != 0)
-                    throw new GssException(majorStatus, minorStatus, GssKrb5MechOidDescStruct);
+                    throw new GssException(majorStatus, minorStatus, GssNtHostBasedService);
 
                 // use the name to attempt to obtain the servers credentials, this is usually from a keytab file. The
                 // server credentials are required to decrypt and verify incoming service tickets
-                majorStatus = gss_acquire_cred(
+                var actualMechanims = default(GssOidDesc);
+                uint actualExpiry = 0;
+                
+                majorStatus = gss_acquire_cred( 
                     out minorStatus,
-                    ref acceptorName,
-                    expiry,
-                    ref GssSpnegoMechOidDescStruct,
+                    acceptorName,
+                    0xffffffff,
+                    ref GssSpnegoMechOidSet,
                     (int)CredentialUsage.Accept,
-                    this.acceptorCredentials,
-                    ref GssNtServiceNameStruct,
-                    0);
+                    ref acceptorCredentials,
+                    ref actualMechanims,
+                    out actualExpiry);
+                
+                Console.WriteLine("ok");
 
                 if (majorStatus != 0)
-                    throw new GssException(majorStatus, minorStatus, GssKrb5MechOidDescStruct);
+                    throw new GssException(majorStatus, minorStatus, GssSpnegoMechOidDesc);
             }
         }
 
@@ -54,7 +61,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
             uint majorStatus = 0;
 
             GssBufferDescStruct outputToken;
-            GssOidDescStruct mech;
+            GssOidDesc mech;
             using (var inputBuffer = GssBuffer.FromBytes(token))
             {
                 // decrypt and verify the incoming service ticket
@@ -65,16 +72,16 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                     ref inputBuffer.Value,
                     IntPtr.Zero,
                     out sourceName,
-                    ref GssSpnegoMechOidDescStruct,
+                    ref GssSpnegoMechOidDesc,
                     out outputToken,
                     IntPtr.Zero, IntPtr.Zero, IntPtr.Zero
                     );
 
                 if (majorStatus != 0)
-                    throw new GssException(majorStatus, minorStatus, GssSpnegoMechOidDescStruct);
+                    throw new GssException(majorStatus, minorStatus, GssSpnegoMechOidDesc);
 
                 GssBufferDescStruct nameBuffer;
-                GssOidDescStruct nameType;
+                GssOidDesc nameType;
 
                 majorStatus = gss_display_name(
                     out minorStatus,

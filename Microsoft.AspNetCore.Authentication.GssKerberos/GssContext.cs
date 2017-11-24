@@ -14,7 +14,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
         public static void main()
         {
 
-            var acceptor = new GssAcceptor("HTTP/orion.testweb.bp.com", 0);
+            var acceptor = new GssAcceptor("HTTP/orion.testweb.bp.com@BP1.AD.BP.COM", 0);
             var token = new byte[1];
             acceptor.Accept(token);
 

@@ -7,40 +7,69 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
     public static class NativeMethods
     {
         #region GSS OIDs
-        private static readonly byte[] GssNtServiceName = { 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x12, 0x01, 0x02, 0x01, 0x04 };
+        private static readonly byte[] GssNtHostBasedServiceOid = { 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x12, 0x01, 0x02, 0x01, 0x04 };
 
-        internal static GssOidDescStruct GssNtServiceNameStruct = new GssOidDescStruct
+        internal static GssOidDesc GssNtHostBasedService = new GssOidDesc
         {
-            elements = Marshal.UnsafeAddrOfPinnedArrayElement(GssNtServiceName, 0),
-            length = 10
+            length = 10,
+            elements = GCHandle.Alloc(GssNtHostBasedServiceOid, GCHandleType.Pinned).AddrOfPinnedObject()
+        };
+        
+        private static readonly byte[] GssNtPrincipalNameOid = { 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x12, 0x01, 0x02, 0x02, 0x01 };
+
+        internal static GssOidDesc GssNtPrincipalName = new GssOidDesc
+        {
+            length = 10,
+            elements = GCHandle.Alloc(GssNtPrincipalNameOid, GCHandleType.Pinned).AddrOfPinnedObject()
         };
         
         /// <summary>
         /// GSS_KRB5_MECH_OID_DESC
         /// </summary>
-        private static readonly byte[] GssKrb5MechOidDesc = { 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x12, 0x01, 0x02, 0x02 };
+        private static readonly byte[] GssKrb5MechOid = { 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x12, 0x01, 0x02, 0x02 };
         
-        internal static GssOidDescStruct GssKrb5MechOidDescStruct = new GssOidDescStruct
+        internal static GssOidDesc GssKrb5MechOidDesc = new GssOidDesc
         {
-            elements = Marshal.UnsafeAddrOfPinnedArrayElement(GssKrb5MechOidDesc, 0),
-            length = 10
+            length = 10,
+            elements = GCHandle.Alloc(GssKrb5MechOid, GCHandleType.Pinned).AddrOfPinnedObject()
         };
 
         /// <summary>
-        /// GSS_KRB5_MECH_OID_DESC
+        /// GSS_SPNEGO_MECH_OID_DESC
         /// </summary>
-        private static readonly byte[] GssSpnegoMechOidDesc = { 0x2b, 0x06, 0x01, 0x05, 0x05, 0x02 };
+        internal static readonly byte[] GssSpnegoMechOid = { 0x2b, 0x06, 0x01, 0x05, 0x05, 0x02 };
 
-        internal static GssOidDescStruct GssSpnegoMechOidDescStruct = new GssOidDescStruct
+        internal static GssOidDesc GssSpnegoMechOidDesc = new GssOidDesc
+        
         {
-            elements = Marshal.UnsafeAddrOfPinnedArrayElement(GssSpnegoMechOidDesc, 0),
-            length = 6
+            length = 6,
+            elements = GCHandle.Alloc(GssSpnegoMechOid, GCHandleType.Pinned).AddrOfPinnedObject()
+        };
+        
+        
+        /// <summary>
+        /// GSS_SPNEGO_MECH_OID_DESC Set
+        /// </summary>
+        internal static GssOidSet GssSpnegoMechOidSet = new GssOidSet
+        {
+            count = 1,
+            elements = GCHandle.Alloc(GssSpnegoMechOidDesc, GCHandleType.Pinned).AddrOfPinnedObject()
         };
         #endregion
 
         #region GSS Structures
         [StructLayout(LayoutKind.Sequential)]
-        public struct GssOidDescStruct
+        public struct GssOidSet
+        {
+            /// OM_uint32->gss_uint32->unsigned int
+            internal uint count;
+
+            /// void*
+            internal IntPtr elements;
+        }
+        
+        [StructLayout(LayoutKind.Sequential)]
+        public struct GssOidDesc
         {
             /// OM_uint32->gss_uint32->unsigned int
             internal uint length;
@@ -91,20 +120,20 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
         internal static extern uint gss_import_name(
             out uint minorStatus,
             ref GssBufferDescStruct inputNameBuffer,
-            ref GssOidDescStruct inputNameType,
+            ref GssOidDesc inputNameType,
             out IntPtr outputName);
 
 
-        [DllImport("libgssapi_krb5.so.2", EntryPoint = "gss_import_name")]
+        [DllImport("libgssapi_krb5.so.2", EntryPoint = "gss_acquire_cred")]
         internal static extern uint gss_acquire_cred(
             out uint minorStatus,
-            ref IntPtr desiredName,
+            IntPtr desiredName,
             uint timeRequired,
-            ref GssOidDescStruct desiredMechanisms,
+            ref GssOidSet desiredMechanisms,
             int credentialUsage,
-            IntPtr credentialHandle,
-            ref GssOidDescStruct actualMechanisms,
-            uint expiryTime);
+            ref IntPtr credentialHandle,
+            ref GssOidDesc acutualMech,
+            out uint expiryTime);
 
 
         /// <summary>
@@ -196,7 +225,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
             IntPtr claimantCredHandle,
             ref IntPtr contextHandle, 
             IntPtr targetName,
-            ref GssOidDescStruct mechType,
+            ref GssOidDesc mechType,
             uint reqFlags,
             uint timeReq,
             IntPtr inputChanBindings,
@@ -215,7 +244,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
             ref GssBufferDescStruct inputToken,
             IntPtr channelBindings,
             out IntPtr sourceName,
-            ref GssOidDescStruct mechType,
+            ref GssOidDesc mechType,
             out GssBufferDescStruct outputToken,
             IntPtr retFlags,
             IntPtr timeRec,
@@ -227,18 +256,17 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
             out uint minorStatus,
             IntPtr inputName,
             out GssBufferDescStruct NameBuffer,
-            out GssOidDescStruct nameType);
+            out GssOidDesc nameType);
 
         [DllImport("libgssapi_krb5.so.2", EntryPoint = "gss_display_status")]
         internal static extern uint gss_display_status(
             out uint minorStatus,
             uint status,
             int statusType,
-            ref GssOidDescStruct mechType,
-            IntPtr messageContext,
-            out GssBufferDescStruct statusString);
-
-
+            ref GssOidDesc mechType,
+            ref IntPtr messageContext,
+            ref GssBufferDescStruct statusString);
+        
         /// <summary>
         /// Frees buffer storage allocated by a GSS-API function
         /// <para>The gss_release_buffer() function frees buffer storage allocated by a GSS-API function. The gss_release_buffer() function also zeros the length field in the descriptor to which the buffer parameter refers, while the GSS-API function sets the pointer field in the descriptor to NULL. Any buffer object returned by a GSS-API function may be passed to gss_release_buffer(), even if no storage is associated with the buffer.</para>
