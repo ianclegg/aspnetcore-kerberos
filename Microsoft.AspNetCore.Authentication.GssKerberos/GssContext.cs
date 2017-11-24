@@ -13,17 +13,13 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
 
         public static void main()
         {
-            using(var principal = GssBuffer.FromString("hello"))
-            {
-                var serverName = IntPtr.Zero;
-                uint minorStatus = 0;
-                
-                NativeMethods.gss_import_name(
-                    ref minorStatus,
-                    ref principal.Value,
-                    ref NativeMethods.GssKrb5MechOidDescStruct,
-                    ref serverName);
-            }
+
+            var acceptor = new GssAcceptor("HTTP/orion.testweb.bp.com", 0);
+            var token = new byte[1];
+            acceptor.Accept(token);
+
+            //if(acceptor.)
+
         }
     }
 }
