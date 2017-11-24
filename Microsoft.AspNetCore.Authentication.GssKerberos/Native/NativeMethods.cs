@@ -222,12 +222,22 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
             IntPtr delegated);
 
 
-        [DllImport("libgssapi_krb5.so.2", EntryPoint = "gss_accept_sec_context")]
+        [DllImport("libgssapi_krb5.so.2", EntryPoint = "gss_display_name")]
         internal static extern uint gss_display_name(
             out uint minorStatus,
             IntPtr inputName,
             out GssBufferDescStruct NameBuffer,
             out GssOidDescStruct nameType);
+
+        [DllImport("libgssapi_krb5.so.2", EntryPoint = "gss_display_status")]
+        internal static extern uint gss_display_status(
+            out uint minorStatus,
+            uint status,
+            int statusType,
+            ref GssOidDescStruct mechType,
+            IntPtr messageContext,
+            out GssBufferDescStruct statusString);
+
 
         /// <summary>
         /// Frees buffer storage allocated by a GSS-API function

@@ -29,7 +29,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                     out var acceptorName
                 );
                 if (majorStatus != 0)
-                    throw new Exception("");
+                    throw new GssException(majorStatus, minorStatus, GssKrb5MechOidDescStruct);
 
                 // use the name to attempt to obtain the servers credentials, this is usually from a keytab file. The
                 // server credentials are required to decrypt and verify incoming service tickets
@@ -44,7 +44,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                     0);
 
                 if (majorStatus != 0)
-                    throw new Exception("");
+                    throw new GssException(majorStatus, minorStatus, GssKrb5MechOidDescStruct);
             }
         }
 
@@ -71,7 +71,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                     );
 
                 if (majorStatus != 0)
-                    throw new Exception("");
+                    throw new GssException(majorStatus, minorStatus, GssSpnegoMechOidDescStruct);
 
                 GssBufferDescStruct nameBuffer;
                 GssOidDescStruct nameType;
