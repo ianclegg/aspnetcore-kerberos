@@ -1,5 +1,4 @@
-﻿using System;
-using System.Text;
+﻿using System.Text;
 using static Microsoft.AspNetCore.Authentication.GssKerberos.Native.NativeMethods;
 
 namespace Microsoft.AspNetCore.Authentication.GssKerberos.Disposables
@@ -24,6 +23,12 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Disposables
                 {
                     length = (uint)p.Value.Length,
                     value = p.Address
+                }, p =>
+                {
+                    var majorStatus = gss_release_buffer(out var minorStatus, ref p);
+                    if (majorStatus != GSS_S_COMPLETE)
+                        throw new GssException("An error occurred releasing a buffer allocated by the GSS provider", 
+                            majorStatus, minorStatus, GSS_C_NO_OID);
                 });
     }
 }

@@ -1,25 +1,29 @@
 ﻿using System;
-using System.Linq;
-
 using System.Runtime.InteropServices;
 using Microsoft.AspNetCore.Authentication.GssKerberos.Disposables;
 using static Microsoft.AspNetCore.Authentication.GssKerberos.Native.NativeMethods;
 
 namespace Microsoft.AspNetCore.Authentication.GssKerberos
 {
-    public class GssAcceptor
+    public class GssAcceptor : IDisposable
     {
-        private IntPtr acceptorName;
-        private IntPtr acceptorCredentials;
+        private readonly IntPtr acceptorCredentials;
         private IntPtr context;
         private IntPtr sourceName;
-        
+        private uint flags;
+        private uint expiryTime;
 
-        public GssAcceptor(string principal, uint expiry)
+        public bool IsEstablished { get; private set; }
+
+        public string Principal { get; private set; }
+
+        public uint Flags { get; private set; }
+
+        public GssAcceptor(string principal, uint expiry = GSS_C_INDEFINITE)
         {
-            // copy the principal name to a gss_buffer
+            // aloocate a gss buffer amd copy the principal name to it
             using (var gssNameBuffer = GssBuffer.FromString(principal))
-            {
+            { 
                 uint minorStatus = 0;
                 uint majorStatus = 0;
 
@@ -30,27 +34,30 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                     ref GssNtPrincipalName,
                     out var acceptorName
                 );
-                if (majorStatus != 0)
-                    throw new GssException(majorStatus, minorStatus, GssNtHostBasedService);
+                if (majorStatus != GSS_S_COMPLETE)
+                    throw new GssException("The GSS provider was unable to import the supplied principal name",
+                        majorStatus, minorStatus, GssNtHostBasedService);
 
                 // use the name to attempt to obtain the servers credentials, this is usually from a keytab file. The
                 // server credentials are required to decrypt and verify incoming service tickets
                 var actualMechanims = default(GssOidDesc);
-                uint actualExpiry = 0;
                 
                 majorStatus = gss_acquire_cred( 
                     out minorStatus,
                     acceptorName,
-                    0xffffffff,
+                    expiry,
                     ref GssSpnegoMechOidSet,
                     (int)CredentialUsage.Accept,
                     ref acceptorCredentials,
                     ref actualMechanims,
-                    out actualExpiry);
-                
+                    out var actualExpiry);
 
-                if (majorStatus != 0)
-                    throw new GssException(majorStatus, minorStatus, GssSpnegoMechOidDesc);
+                // release the gss_name allocated by gss, the gss_buffer we allocated is free'd by the using block
+                gss_release_name(out minorStatus, ref acceptorName);
+
+                if (majorStatus != GSS_S_COMPLETE)
+                    throw new GssException("The GSS Provider was unable aquire credentials for authentication",
+                        majorStatus, minorStatus, GssSpnegoMechOidDesc);
             }
         }
 
@@ -59,8 +66,6 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
             uint minorStatus = 0;
             uint majorStatus = 0;
 
-            GssBufferDescStruct outputToken;
-            GssOidDesc mech;
             using (var inputBuffer = GssBuffer.FromBytes(token))
             {
                 // decrypt and verify the incoming service ticket
@@ -69,31 +74,79 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                     ref context,
                     acceptorCredentials,
                     ref inputBuffer.Value,
-                    IntPtr.Zero,
+                    IntPtr.Zero,        // no support for channel binding
                     out sourceName,
                     ref GssSpnegoMechOidDesc,
-                    out outputToken,
-                    IntPtr.Zero, IntPtr.Zero, IntPtr.Zero
-                    );
+                    out GssBufferDescStruct output,
+                    out flags, out expiryTime, IntPtr.Zero
+                );
 
-                if (majorStatus != 0)
-                    throw new GssException(majorStatus, minorStatus, GssSpnegoMechOidDesc);
+                switch (majorStatus)
+                {
+                    case GSS_S_COMPLETE:
+                        CompleteContext(sourceName);
+                        return MarshalOutputToken(output);
 
-                GssBufferDescStruct nameBuffer;
-                GssOidDesc nameType;
+                    case GSS_S_CONTINUE_NEEDED:
+                        return MarshalOutputToken(output);
 
-                majorStatus = gss_display_name(
-                    out minorStatus,
-                    sourceName,
-                    out nameBuffer,
-                    out nameType);
-
-                Marshal.PtrToStringUni(nameBuffer.value, (int)nameBuffer.length);
-
+                    default:
+                        throw new GssException("The GSS Provider was unable to accept the supplied authentication token",
+                            majorStatus, minorStatus, GssSpnegoMechOidDesc);
+                }
             }
-            return null;
         }
 
+        private static byte[] MarshalOutputToken(GssBufferDescStruct gssToken)
+        {
+            if (gssToken.length > 0)
+            {
+                // Allocate a clr byte arry and copy the token data over
+                var buffer = new byte[gssToken.length];
+                Marshal.Copy(gssToken.value, buffer, 0, (int)gssToken.length);
 
+                // Finally, release the underlying gss buffer
+                var majorStatus = gss_release_buffer(out var minorStatus, ref gssToken);
+                if (majorStatus != GSS_S_COMPLETE)
+                    throw new GssException("An error occurred releasing the token buffer allocated by the GSS provider",
+                        majorStatus, minorStatus, GssSpnegoMechOidDesc);
+
+                return buffer;
+            }
+            return new byte[0];
+        }
+
+        private void CompleteContext(IntPtr sourceName)
+        {
+            // Use GSS to translate the opaque name to an ASCII 'display' name
+            var majorStatus = gss_display_name(
+                out var minorStatus,
+                sourceName,
+                out var nameBuffer,
+                out var nameType);
+
+            if (majorStatus != GSS_S_COMPLETE)
+                throw new GssException("An error occurred getting the display name of the principal",
+                    majorStatus, minorStatus, GssSpnegoMechOidDesc);
+
+            // Copy the display name to a CLR string
+            Flags = flags;
+            IsEstablished = true;
+            Principal = Marshal.PtrToStringAnsi(nameBuffer.value, (int)nameBuffer.length);
+
+            // Finally, release the GSS allocated buffer
+            majorStatus = gss_release_buffer(out minorStatus, ref nameBuffer);
+            if (majorStatus != GSS_S_COMPLETE)
+                throw new GssException("An error occurred releasing the display name of the principal",
+                    majorStatus, minorStatus, GssSpnegoMechOidDesc);
+        }
+
+        public void Dispose()
+        {
+            var majorStatus = gss_delete_sec_context(out var minorStatus, ref context, GSS_C_NO_BUFFER);
+            if (majorStatus != GSS_S_COMPLETE)
+                throw new GssException("The GSS provider returned an error while attempting to delete the GSS Context",
+                    majorStatus, minorStatus, GssSpnegoMechOidDesc);
+        }
     }
 }

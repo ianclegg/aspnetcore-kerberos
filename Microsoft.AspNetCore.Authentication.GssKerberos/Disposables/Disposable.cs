@@ -24,6 +24,11 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Disposables
         /// </summary>
         public static Disposable<T> From<T, D>(D disposable, Func<D, T> loader) where D : IDisposable =>
             From(loader(disposable), disposable);
+        /// <summary>
+        /// Automatic dynamic disposable storing <paramref name="value"/>, <paramref name="disposable"/> will be disposed
+        /// </summary>
+        public static Disposable<T> From<T, D>(D disposable, Func<D, T> loader, Action<T> disposer) where D : IDisposable =>
+            From(loader(disposable), disposable);
 
         /// <summary>
         /// Automatic dynamic disposable storing <paramref name="value"/>, <paramref name="disposables"/> will be disposed

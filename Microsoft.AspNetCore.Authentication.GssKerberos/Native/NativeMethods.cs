@@ -6,6 +6,22 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
 {
     public static class NativeMethods
     {
+        #region GSS Constants
+
+        // ReSharper disable InconsistentNaming
+        internal const uint GSS_S_COMPLETE = 0x00000000;
+        internal const uint GSS_S_CONTINUE_NEEDED = 0x00000001;
+
+        internal const uint GSS_C_INDEFINITE = 0xffffffff;
+
+        internal static IntPtr GSS_C_NO_BUFFER = new IntPtr(0);
+
+        internal static GssOidDesc GSS_C_NO_OID = default(GssOidDesc);
+        internal static GssOidSet GSS_C_NO_OID_SET = default(GssOidSet);
+
+
+        #endregion
+
         #region GSS OIDs
         private static readonly byte[] GssNtHostBasedServiceOid = { 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x12, 0x01, 0x02, 0x01, 0x04 };
 
@@ -245,7 +261,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
             IntPtr inputChanBindings,
             ref GssBufferDescStruct inputToken,
             IntPtr actualMechType,
-            ref GssBufferDescStruct outputToken,
+            out GssBufferDescStruct outputToken,
             IntPtr retFlags,
             IntPtr timeRec);
 
@@ -260,8 +276,8 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
             out IntPtr sourceName,
             ref GssOidDesc mechType,
             out GssBufferDescStruct outputToken,
-            IntPtr retFlags,
-            IntPtr timeRec,
+            out uint retFlags,
+            out uint timeRec,
             IntPtr delegated);
 
 
@@ -298,7 +314,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
         /// </returns>
         [DllImport("libgssapi_krb5.so.2", EntryPoint = "gss_release_buffer")]
         internal static extern uint gss_release_buffer(
-            ref uint minorStatus,
+            out uint minorStatus,
             ref GssBufferDescStruct buffer);
 
         /// <summary>
@@ -326,7 +342,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
         /// </returns>
         [DllImport("libgssapi_krb5.so.2", EntryPoint = "gss_release_buffer")]
         internal static extern uint gss_delete_sec_context(
-            ref uint minorStatus,
+            out uint minorStatus,
             ref IntPtr contextHandle,
             IntPtr outputToken);
         
@@ -351,7 +367,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
         /// </returns>
         [DllImport("libgssapi_krb5.so.2", EntryPoint = "gss_release_name")]
         internal static extern uint gss_release_name(
-            ref uint minorStatus,
+            out uint minorStatus,
             ref IntPtr inputName);
 
         #endregion

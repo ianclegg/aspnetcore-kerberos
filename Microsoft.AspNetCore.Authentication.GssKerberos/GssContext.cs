@@ -16,18 +16,17 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
         public static void main()
         {
 
+            // Generate a token
             var initiator = new GssInitiator(
                 username: "<username>",
                 password: "<password>",
                 spn: "HTTP/orion.testweb.bp.com");
+            
             var token = initiator.Initiate(null);
 
-            // Credentials
+            // Accept the token
             var acceptor = new GssAcceptor("HTTP/orion.testweb.bp.com@BP1.AD.BP.COM", 0);
             acceptor.Accept(token);
-
-            //if(acceptor.)
-
         }
     }
 }
