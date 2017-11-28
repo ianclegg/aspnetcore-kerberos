@@ -1,9 +1,13 @@
 ﻿using System;
+using System.Security.Claims;
+using System.Security.Principal;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.GssKerberos.Gss;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Net.Http.Headers;
 
 namespace Microsoft.AspNetCore.Authentication.GssKerberos
 {
@@ -11,15 +15,12 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
     {
         private const string SchemeName = "Negotiate";
 
-        private readonly GssCredential gssCredential;
-
         public GssAuthenticationHandler(
             IOptionsMonitor<GssAuthenticationOptions> options,
             ILoggerFactory logger,
             UrlEncoder encoder,
             ISystemClock clock) : base(options, logger, encoder, clock)
         {
-            this.gssCredential = this.Options.Credential;
         }
 
         protected new GssAuthenticationEvents Events
@@ -33,12 +34,12 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
             string authorizationHeader = Request.Headers["Authorization"];
             if (string.IsNullOrEmpty(authorizationHeader))
             {
-                return AuthenticateResult.NoResult();
+                return AuthenticateResult.Fail("Authorization header missing");
             }
 
             if (!authorizationHeader.StartsWith("Negotiate ", StringComparison.OrdinalIgnoreCase))
             {
-                return AuthenticateResult.NoResult();
+                return AuthenticateResult.Fail("not me");
             }
 
             var base64Token = authorizationHeader.Substring(SchemeName.Length).Trim();
@@ -53,26 +54,29 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
             try
             {
                 var asn1ServiceTicket = Convert.FromBase64String(base64Token);
-                var acceptor = new GssAcceptor(this.gssCredential);
-
-                acceptor.Accept(asn1ServiceTicket);
-
-                if (acceptor.IsEstablished)
+                using (var acceptor = new GssAcceptor(Options.Credential))
                 {
-                    // ok, now we have authentctaed the user we know who they are... but now we need to check if
-                    // they are actually authorised to access the resource.
-                    throw new Exception($"Authentication Failed");
+                    acceptor.Accept(asn1ServiceTicket);
+                    if (acceptor.IsEstablished)
+                    {
+                        var user = GenericPrincipal(new GenericIdentity(acceptor.Principal));
+                        var ticket = new AuthenticationTicket(user, new AuthenticationProperties(), null);
+                        return AuthenticateResult.Success(ticket);
+                    }
+                    return AuthenticateResult.Fail("Access Denied");
                 }
-                else
-                {
-                    throw new Exception($"Authentication Failed");
-                }
-
             }
             catch (Exception ex)
             {
-                throw new Exception($"Authentication Failed");
+                throw new Exception($"Authentication Failed", ex);
             }
+        }
+
+        protected override Task HandleChallengeAsync(AuthenticationProperties properties)
+        {
+            Response.StatusCode = 401;
+            Response.Headers.Append(HeaderNames.WWWAuthenticate, "Negotiate");
+            return Task.CompletedTask;
         }
     }
 }

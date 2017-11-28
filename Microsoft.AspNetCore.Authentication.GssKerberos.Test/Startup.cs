@@ -1,6 +1,9 @@
-﻿using Microsoft.AspNetCore.Authentication.GssKerberos.Gss;
+﻿using System.Linq;
+using Microsoft.AspNetCore.Authentication.GssKerberos.Gss;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.Internal;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -25,8 +28,11 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Test
                 {
                     options.Credential = GssCredentials.FromKeytab(servicePrincipal, CredentialUsage.Accept);
                 });
+
+
         }
 
+        
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
@@ -34,6 +40,8 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Test
             {
                 app.UseDeveloperExceptionPage();
             }
+            app.UseAuthentication();
+            app.UseMvc();
         }
     }
 }
