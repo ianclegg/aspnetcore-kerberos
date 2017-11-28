@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using Microsoft.AspNetCore.Authentication.GssKerberos.Disposables;
 using static Microsoft.AspNetCore.Authentication.GssKerberos.Native.NativeMethods;
+using Microsoft.AspNetCore.Authentication.GssKerberos.Gss;
 
 namespace Microsoft.AspNetCore.Authentication.GssKerberos
 {
@@ -19,47 +20,8 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
 
         public uint Flags { get; private set; }
 
-        public GssAcceptor(string principal, uint expiry = GSS_C_INDEFINITE)
-        {
-            // aloocate a gss buffer amd copy the principal name to it
-            using (var gssNameBuffer = GssBuffer.FromString(principal))
-            { 
-                uint minorStatus = 0;
-                uint majorStatus = 0;
-
-                // use the buffer to import the name into a gss_name
-                majorStatus = gss_import_name(
-                    out minorStatus,
-                    ref gssNameBuffer.Value,
-                    ref GssNtPrincipalName,
-                    out var acceptorName
-                );
-                if (majorStatus != GSS_S_COMPLETE)
-                    throw new GssException("The GSS provider was unable to import the supplied principal name",
-                        majorStatus, minorStatus, GssNtHostBasedService);
-
-                // use the name to attempt to obtain the servers credentials, this is usually from a keytab file. The
-                // server credentials are required to decrypt and verify incoming service tickets
-                var actualMechanims = default(GssOidDesc);
-                
-                majorStatus = gss_acquire_cred( 
-                    out minorStatus,
-                    acceptorName,
-                    expiry,
-                    ref GssSpnegoMechOidSet,
-                    (int)CredentialUsage.Accept,
-                    ref acceptorCredentials,
-                    ref actualMechanims,
-                    out var actualExpiry);
-
-                // release the gss_name allocated by gss, the gss_buffer we allocated is free'd by the using block
-                gss_release_name(out minorStatus, ref acceptorName);
-
-                if (majorStatus != GSS_S_COMPLETE)
-                    throw new GssException("The GSS Provider was unable aquire credentials for authentication",
-                        majorStatus, minorStatus, GssSpnegoMechOidDesc);
-            }
-        }
+        public GssAcceptor(GssCredential credential) => 
+            (acceptorCredentials) = (credential.Credentials);
 
         public byte[] Accept(byte[] token)
         {
