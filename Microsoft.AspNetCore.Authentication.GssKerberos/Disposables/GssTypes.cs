@@ -7,12 +7,12 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Disposables
     {
         private static readonly Encoding iso8859 = Encoding.GetEncoding("iso-8859-1");
 
-        internal static Disposable<GssBufferDescStruct> FromString(string buffer) =>
+        internal static Disposable<GssBufferStruct> FromString(string buffer) =>
             FromBytes(iso8859.GetBytes(buffer));
 
-        public static Disposable<GssBufferDescStruct> FromBytes(byte[] buffer) =>
+        public static Disposable<GssBufferStruct> FromBytes(byte[] buffer) =>
             Disposable.From(
-                Pinned.From(buffer), p => new GssBufferDescStruct
+                Pinned.From(buffer), p => new GssBufferStruct
                 {
                     length = (uint)p.Value.Length,
                     value = p.Address

@@ -16,7 +16,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Gss
                 // krb5_gss_register_acceptor_identity(string) 
             }
 
-            // aloocate a gss buffer amd copy the principal name to it
+            // allocate a gss buffer and copy the principal name to it
             using (var gssNameBuffer = GssBuffer.FromString(principal))
             {
                 uint minorStatus = 0;

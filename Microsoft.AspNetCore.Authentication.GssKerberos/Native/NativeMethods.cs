@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Net;
 using System.Runtime.InteropServices;
 
 namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
@@ -95,13 +94,23 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
         }
         
         [StructLayout(LayoutKind.Sequential)]
-        internal struct GssBufferDescStruct
+        internal struct GssBufferStruct
         {
             /// size_t->unsigned int
             internal uint length;
 
             /// void*
             internal IntPtr value;
+        }
+        
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct GssBufferSet
+        {
+            /// size_t->unsigned int
+           internal uint count;
+
+            /// void*
+            internal IntPtr elements;
         }
         #endregion
         
@@ -135,7 +144,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
         [DllImport("libgssapi_krb5.so.2", EntryPoint = "gss_import_name")]
         internal static extern uint gss_import_name(
             out uint minorStatus,
-            ref GssBufferDescStruct inputNameBuffer,
+            ref GssBufferStruct inputNameBuffer,
             ref GssOidDesc inputNameType,
             out IntPtr outputName);
 
@@ -155,7 +164,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
         internal static extern uint gss_acquire_cred_with_password(
             out uint minorStatus,
             IntPtr desiredName,
-            ref GssBufferDescStruct password,
+            ref GssBufferStruct password,
             uint timeRequired,
             ref GssOidSet desiredMechanisms,
             int credentialUsage,
@@ -163,8 +172,25 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
             ref GssOidDesc acutualMech,
             out uint expiryTime);
 
-
-
+        [DllImport("libgssapi_krb5.so.2", EntryPoint = "gss_inquire_name")]
+        internal static extern uint gss_inquire_name(
+            out uint minorStatus,
+            IntPtr name,
+            out int mechName,
+            out GssOidSet oids,
+            out IntPtr attrs);
+        
+        [DllImport("libgssapi_krb5.so.2", EntryPoint = "gss_get_name_attribute")]
+        internal static extern uint gss_get_name_attribute(
+            out uint minorStatus,
+            IntPtr name,
+            ref GssBufferStruct attribute,
+            out int authenticated,
+            out int complete,
+            out GssBufferStruct value,
+            out GssBufferStruct displayValue,
+            ref int more);
+        
 
         /// <summary>
         /// Initiates a GSS-API security context with a peer application
@@ -259,9 +285,9 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
             uint reqFlags,
             uint timeReq,
             IntPtr inputChanBindings,
-            ref GssBufferDescStruct inputToken,
+            ref GssBufferStruct inputToken,
             IntPtr actualMechType,
-            out GssBufferDescStruct outputToken,
+            out GssBufferStruct outputToken,
             IntPtr retFlags,
             IntPtr timeRec);
 
@@ -271,11 +297,11 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
             out uint minorStatus,
             ref IntPtr contextHandle,
             IntPtr acceptorCredHandle,
-            ref GssBufferDescStruct inputToken,
+            ref GssBufferStruct inputToken,
             IntPtr channelBindings,
             out IntPtr sourceName,
             ref GssOidDesc mechType,
-            out GssBufferDescStruct outputToken,
+            out GssBufferStruct outputToken,
             out uint retFlags,
             out uint timeRec,
             IntPtr delegated);
@@ -285,7 +311,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
         internal static extern uint gss_display_name(
             out uint minorStatus,
             IntPtr inputName,
-            out GssBufferDescStruct NameBuffer,
+            out GssBufferStruct NameBuffer,
             out GssOidDesc nameType);
 
         [DllImport("libgssapi_krb5.so.2", EntryPoint = "gss_display_status")]
@@ -295,7 +321,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
             int statusType,
             ref GssOidDesc mechType,
             ref IntPtr messageContext,
-            ref GssBufferDescStruct statusString);
+            ref GssBufferStruct statusString);
         
         /// <summary>
         /// Frees buffer storage allocated by a GSS-API function
@@ -315,7 +341,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
         [DllImport("libgssapi_krb5.so.2", EntryPoint = "gss_release_buffer")]
         internal static extern uint gss_release_buffer(
             out uint minorStatus,
-            ref GssBufferDescStruct buffer);
+            ref GssBufferStruct buffer);
 
         /// <summary>
         /// Deletes a GSS-API security context

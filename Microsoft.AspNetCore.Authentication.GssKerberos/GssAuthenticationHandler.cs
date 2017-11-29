@@ -29,17 +29,17 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
             set => base.Events = value;
         }
 
-        protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
+        protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
             string authorizationHeader = Request.Headers["Authorization"];
             if (string.IsNullOrEmpty(authorizationHeader))
             {
-                return AuthenticateResult.Fail("Authorization header missing");
+                return Task.FromResult(AuthenticateResult.Fail("Authorization header missing"));
             }
 
             if (!authorizationHeader.StartsWith("Negotiate ", StringComparison.OrdinalIgnoreCase))
             {
-                return AuthenticateResult.Fail("not me");
+                return Task.FromResult(AuthenticateResult.Fail("not me"));
             }
 
             var base64Token = authorizationHeader.Substring(SchemeName.Length).Trim();
@@ -48,7 +48,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
             {
                 const string noCredentialsMessage = "No credentials";
                 Logger.LogInformation(noCredentialsMessage);
-                return AuthenticateResult.Fail(noCredentialsMessage);
+                return Task.FromResult(AuthenticateResult.Fail(noCredentialsMessage));
             }
 
             try
@@ -59,16 +59,20 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                     acceptor.Accept(asn1ServiceTicket);
                     if (acceptor.IsEstablished)
                     {
-                        var user = GenericPrincipal(new GenericIdentity(acceptor.Principal));
-                        var ticket = new AuthenticationTicket(user, new AuthenticationProperties(), null);
-                        return AuthenticateResult.Success(ticket);
+                        var ticket = new AuthenticationTicket(
+                            new GenericPrincipal(new GenericIdentity(acceptor.Principal), 
+                                new[] { "User" }),
+                            new AuthenticationProperties(),
+                            GssAuthenticationDefaults.AuthenticationScheme);
+
+                        return Task.FromResult(AuthenticateResult.Success(ticket));
                     }
-                    return AuthenticateResult.Fail("Access Denied");
+                    return Task.FromResult(AuthenticateResult.Fail("Access Denied"));
                 }
             }
             catch (Exception ex)
             {
-                throw new Exception($"Authentication Failed", ex);
+                throw new Exception("Authentication Failed", ex);
             }
         }
 

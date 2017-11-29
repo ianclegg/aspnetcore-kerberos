@@ -23,12 +23,15 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Test
         {
             var servicePrincipal = "<spn>";
 
+            
             services.AddAuthentication(GssAuthenticationDefaults.AuthenticationScheme)
                 .AddKerberos(options =>
                 {
                     options.Credential = GssCredentials.FromKeytab(servicePrincipal, CredentialUsage.Accept);
                 });
 
+
+            services.AddMvc();
 
         }
 

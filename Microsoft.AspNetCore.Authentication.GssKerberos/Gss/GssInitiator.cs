@@ -39,7 +39,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Gss
         {
             // If the token is null, supply a NULL pointer as the input
             var gssToken = token == null
-                ? Disposable.From(default(NativeMethods.GssBufferDescStruct))
+                ? Disposable.From(default(NativeMethods.GssBufferStruct))
                 : GssBuffer.FromBytes(token);
             
  
@@ -74,7 +74,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Gss
             }
         }
 
-        private static byte[] MarshalOutputToken(NativeMethods.GssBufferDescStruct gssToken)
+        private static byte[] MarshalOutputToken(NativeMethods.GssBufferStruct gssToken)
         {
             if (gssToken.length > 0)
             {

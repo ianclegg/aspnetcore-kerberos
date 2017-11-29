@@ -31,7 +31,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
         private static string TranslateMajorStatusCode(uint status)
         {
             var context = IntPtr.Zero;
-            var buffer = default(NativeMethods.GssBufferDescStruct);
+            var buffer = default(NativeMethods.GssBufferStruct);
             var oid = default(NativeMethods.GssOidDesc);
             
             NativeMethods.gss_display_status(out var _ ,status, GssCGssCode, ref oid, ref context, ref buffer);
@@ -41,7 +41,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
         private static string TranslateMinorStatusCode(uint status, NativeMethods.GssOidDesc oid)
         {
             var context = IntPtr.Zero;
-            var buffer = default(NativeMethods.GssBufferDescStruct);
+            var buffer = default(NativeMethods.GssBufferStruct);
             
             NativeMethods.gss_display_status(out var _ , status, GssCMechCode, ref oid, ref context, ref buffer);
             return buffer.value == IntPtr.Zero ? string.Empty : Marshal.PtrToStringAnsi(buffer.value);
