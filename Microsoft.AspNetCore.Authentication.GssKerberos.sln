@@ -5,7 +5,13 @@ VisualStudioVersion = 15.0.27004.2009
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.AspNetCore.Authentication.GssKerberos", "Microsoft.AspNetCore.Authentication.GssKerberos\Microsoft.AspNetCore.Authentication.GssKerberos.csproj", "{FFD93245-E321-46B2-B8FC-D006FCF83660}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.AspNetCore.Authentication.GssKerberos.Test", "Microsoft.AspNetCore.Authentication.GssKerberos.Test\Microsoft.AspNetCore.Authentication.GssKerberos.Test.csproj", "{C9401F87-FBE8-4E96-A3E8-AE7919DBAD23}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.AspNetCore.Authentication.GssKerberos.Test", "Microsoft.AspNetCore.Authentication.GssKerberos.Test\Microsoft.AspNetCore.Authentication.GssKerberos.Test.csproj", "{C9401F87-FBE8-4E96-A3E8-AE7919DBAD23}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{05405341-221B-4EF0-B1C9-34882391889C}"
+	ProjectSection(SolutionItems) = preProject
+		appveyor.yml = appveyor.yml
+		LICENSE.md = LICENSE.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
