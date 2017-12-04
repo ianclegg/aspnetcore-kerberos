@@ -1,6 +1,6 @@
 ﻿using System;
 using Microsoft.AspNetCore.Authentication.GssKerberos.Disposables;
-using Microsoft.AspNetCore.Authentication.GssKerberos.Native;
+using static Microsoft.AspNetCore.Authentication.GssKerberos.Native.Krb5Interop;
 
 namespace Microsoft.AspNetCore.Authentication.GssKerberos.Gss
 {
@@ -18,36 +18,36 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Gss
             using (var gssPasswordBuffer = GssBuffer.FromString(password))
             {
                 // use the buffer to import the name into a gss_name
-                majorStatus = NativeMethods.gss_import_name(
+                majorStatus = gss_import_name(
                     out minorStatus,
                     ref gssUsernameBuffer.Value,
-                    ref NativeMethods.GssNtPrincipalName,
+                    ref GssNtPrincipalName,
                     out var gssUsername
                 );
-                if (majorStatus != NativeMethods.GSS_S_COMPLETE)
+                if (majorStatus != GSS_S_COMPLETE)
                     throw new GssException("The GSS provider was unable to import the supplied principal name",
-                        majorStatus, minorStatus, NativeMethods.GssNtHostBasedService);
+                        majorStatus, minorStatus, GssNtHostBasedService);
 
                 // attempt to obtain a TGT from the KDC using the supplied username and password
-                var actualMechanims = default(NativeMethods.GssOidDesc);
+                var actualMechanims = default(GssOidDesc);
 
-                majorStatus = NativeMethods.gss_acquire_cred_with_password(
+                majorStatus = gss_acquire_cred_with_password(
                     out minorStatus,
                     gssUsername,
                     ref gssPasswordBuffer.Value,
                     0xffffffff,
-                    ref NativeMethods.GssSpnegoMechOidSet,
+                    ref GssSpnegoMechOidSet,
                     (int)usage,
                     ref _credentials,
                     ref actualMechanims,
                     out var actualExpiry);
 
                 // release the gss_name allocated by gss, the gss_buffer we allocated is free'd by the using block
-                NativeMethods.gss_release_name(out var _, ref gssUsername);
+                gss_release_name(out var _, ref gssUsername);
 
-                if (majorStatus != NativeMethods.GSS_S_COMPLETE)
+                if (majorStatus != GSS_S_COMPLETE)
                     throw new GssException("The GSS Provider was unable aquire credentials for authentication",
-                        majorStatus, minorStatus, NativeMethods.GssSpnegoMechOidDesc);
+                        majorStatus, minorStatus, GssSpnegoMechOidDesc);
             }
         }
 

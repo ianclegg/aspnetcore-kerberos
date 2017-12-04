@@ -1,5 +1,6 @@
-﻿using System.Text;
-using static Microsoft.AspNetCore.Authentication.GssKerberos.Native.NativeMethods;
+﻿using System;
+using System.Text;
+using static Microsoft.AspNetCore.Authentication.GssKerberos.Native.Krb5Interop;
 
 namespace Microsoft.AspNetCore.Authentication.GssKerberos.Disposables
 {
