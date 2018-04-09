@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authentication.GssKerberos.Disposables;
-using static Microsoft.AspNetCore.Authentication.GssKerberos.Native.NativeMethods;
+using static Microsoft.AspNetCore.Authentication.GssKerberos.Native.Krb5Interop;
 using Microsoft.AspNetCore.Authentication.GssKerberos.Gss;
 
 namespace Microsoft.AspNetCore.Authentication.GssKerberos

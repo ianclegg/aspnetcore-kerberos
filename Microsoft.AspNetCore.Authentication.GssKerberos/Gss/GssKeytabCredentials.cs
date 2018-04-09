@@ -1,6 +1,6 @@
 ﻿using System;
 using Microsoft.AspNetCore.Authentication.GssKerberos.Disposables;
-using static Microsoft.AspNetCore.Authentication.GssKerberos.Native.NativeMethods;
+using static Microsoft.AspNetCore.Authentication.GssKerberos.Native.Krb5Interop;
 
 namespace Microsoft.AspNetCore.Authentication.GssKerberos.Gss
 {

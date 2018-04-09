@@ -34,12 +34,12 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
             string authorizationHeader = Request.Headers["Authorization"];
             if (string.IsNullOrEmpty(authorizationHeader))
             {
-                return Task.FromResult(AuthenticateResult.Fail("Authorization header missing"));
+                return Task.FromResult(AuthenticateResult.NoResult());
             }
 
             if (!authorizationHeader.StartsWith("Negotiate ", StringComparison.OrdinalIgnoreCase))
             {
-                return Task.FromResult(AuthenticateResult.Fail("not me"));
+                return Task.FromResult(AuthenticateResult.NoResult());
             }
 
             var base64Token = authorizationHeader.Substring(SchemeName.Length).Trim();
