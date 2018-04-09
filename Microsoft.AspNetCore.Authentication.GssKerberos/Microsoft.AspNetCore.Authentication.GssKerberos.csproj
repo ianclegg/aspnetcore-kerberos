@@ -4,8 +4,6 @@
     <ApplicationIcon />
     <OutputType>Library</OutputType>
     <StartupObject />
-    <VersionPrefix>0.0.1</VersionPrefix>
-    <VersionSuffix>beta</VersionSuffix>
 
     <PackageId>AspNetCore.Authentication.GssKerberos</PackageId>
     <Authors>Ian Clegg</Authors>
