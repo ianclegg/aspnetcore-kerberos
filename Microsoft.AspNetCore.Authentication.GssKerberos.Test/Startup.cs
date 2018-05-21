@@ -21,14 +21,16 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Test
             var servicePrincipal = "<spn>";
 
             
-            services.AddAuthentication(GssAuthenticationDefaults.AuthenticationScheme)
+            services.AddAuthentication(options =>
+                    {
+                        options.DefaultChallengeScheme = GssAuthenticationDefaults.AuthenticationScheme;
+                        options.DefaultAuthenticateScheme = GssAuthenticationDefaults.AuthenticationScheme;
+                    })
                 .AddKerberos(options =>
                 {
                     options.Credential = GssCredentials.FromKeytab(servicePrincipal, CredentialUsage.Accept);
                 });
 
-
-            services.AddMvc();
 
         }
 
@@ -41,7 +43,11 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Test
                 app.UseDeveloperExceptionPage();
             }
             app.UseAuthentication();
-            app.UseMvc();
+            app.Map("/ws", ws =>
+            {
+              //  ws.UseWebSockets();
+                ws.UseMiddleware<CustomMiddleware>();
+            });
         }
     }
 }

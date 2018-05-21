@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Security.Claims;
 using System.Security.Principal;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication.GssKerberos.Gss;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -11,7 +9,7 @@ using Microsoft.Net.Http.Headers;
 
 namespace Microsoft.AspNetCore.Authentication.GssKerberos
 {
-    internal class GssAuthenticationHandler : AuthenticationHandler<GssAuthenticationOptions>
+    public class GssAuthenticationHandler : AuthenticationHandler<GssAuthenticationOptions>
     {
         private const string SchemeName = "Negotiate";
 
@@ -60,8 +58,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                     if (acceptor.IsEstablished)
                     {
                         var ticket = new AuthenticationTicket(
-                            new GenericPrincipal(new GenericIdentity(acceptor.Principal), 
-                                new[] { "User" }),
+                            new GenericPrincipal(new GenericIdentity(acceptor.Principal), new[] { "User" }),
                             new AuthenticationProperties(),
                             GssAuthenticationDefaults.AuthenticationScheme);
 

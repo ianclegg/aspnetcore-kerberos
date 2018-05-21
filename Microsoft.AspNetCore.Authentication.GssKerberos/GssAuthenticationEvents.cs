@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.AspNetCore.Authentication.GssKerberos
 {
-    internal class GssAuthenticationEvents
+    public class GssAuthenticationEvents
     {
 
         /// <summary>
