@@ -4,6 +4,6 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
 {
     public class GssAuthenticationOptions : AuthenticationSchemeOptions
     {
-        public GssCredential Credential { get; set; }
+        public IAcceptor Acceptor { get; set; }
     }
 }

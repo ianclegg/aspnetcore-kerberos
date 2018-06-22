@@ -2,12 +2,13 @@
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authentication.GssKerberos.Disposables;
-using static Microsoft.AspNetCore.Authentication.GssKerberos.Native.Krb5Interop;
 using Microsoft.AspNetCore.Authentication.GssKerberos.Gss;
+
+using static Microsoft.AspNetCore.Authentication.GssKerberos.Native.Krb5Interop;
 
 namespace Microsoft.AspNetCore.Authentication.GssKerberos
 {
-    public class GssAcceptor : IDisposable
+    public class GssAcceptor : IAcceptor
     {
         private readonly IntPtr acceptorCredentials;
         private IntPtr context;
@@ -136,7 +137,8 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                 // Allocate a clr byte arry and copy the Pac data over
                 Pac = new byte[value.length];
                 Marshal.Copy(value.value, Pac, 0, (int)value.length);
-                
+
+                // TODO: decode the structure, we can extract group membership information (SID's) from the PAC
                 AsnEncodedData d = new AsnEncodedData(Pac);
                 var data = d.Format(true);
             }

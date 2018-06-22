@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Data.SqlTypes;
 using System.Runtime.InteropServices;
 
 
@@ -21,8 +20,6 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
 
         internal static GssOidDesc GSS_C_NO_OID = default(GssOidDesc);
         internal static GssOidSet GSS_C_NO_OID_SET = default(GssOidSet);
-
-
         #endregion
 
         #region GSS OIDs

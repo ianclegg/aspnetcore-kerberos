@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 
 namespace Microsoft.AspNetCore.Authentication.GssKerberos.Test
@@ -21,7 +18,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Test
             if(!result.Succeeded)
                 await context.ChallengeAsync(GssAuthenticationDefaults.AuthenticationScheme);
 
-            context.Response.WriteAsync("hello");
+            await context.Response.WriteAsync(result.Principal.Identity.Name);
         }
     }
 }

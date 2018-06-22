@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data;
 using System.Security.Principal;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
@@ -29,6 +30,8 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
+            var acceptor = Options.Acceptor;
+
             string authorizationHeader = Request.Headers["Authorization"];
             if (string.IsNullOrEmpty(authorizationHeader))
             {
@@ -52,7 +55,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
             try
             {
                 var asn1ServiceTicket = Convert.FromBase64String(base64Token);
-                using (var acceptor = new GssAcceptor(Options.Credential))
+                using (acceptor)
                 {
                     acceptor.Accept(asn1ServiceTicket);
                     if (acceptor.IsEstablished)

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authentication.GssKerberos.Gss;
+using Microsoft.AspNetCore.Authentication.GssKerberos.Sspi;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -20,7 +21,6 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Test
         {
             var servicePrincipal = "<spn>";
 
-            
             services.AddAuthentication(options =>
                     {
                         options.DefaultChallengeScheme = GssAuthenticationDefaults.AuthenticationScheme;
@@ -28,10 +28,12 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Test
                     })
                 .AddKerberos(options =>
                 {
-                    options.Credential = GssCredentials.FromKeytab(servicePrincipal, CredentialUsage.Accept);
+                    // Use MIT Kerberos GSS (Linux / Windows)
+                    options.Acceptor = new GssAcceptor(GssCredentials.FromKeytab(servicePrincipal, CredentialUsage.Accept)); 
+
+                    // Uncomment to use Microsoft SSPI (Windows)
+                    // options.Acceptor = new SspiAcceptor(new SspiCredentials("", "")); 
                 });
-
-
         }
 
         
