@@ -6,10 +6,11 @@
     <StartupObject />
 
     <PackageId>AspNetCore.Authentication.GssKerberos</PackageId>
+    <PackageVersion>0.0.0</PackageVersion>
     <Authors>Ian Clegg</Authors>
     <Description>Microsoft ASP.NET Core 2.0 SPNEGO GSS Kerberos Authentication</Description>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <Copyright>Copyright 2017 (c) Ian Clegg. All rights reserved.</Copyright>
+    <Copyright>Copyright 2018 (c) Ian Clegg. All rights reserved.</Copyright>
     <ProjectUrl>https://github.com/ianclegg/aspnetcore-kerberos</ProjectUrl>
     <LicenseUrl>https://github.com/ianclegg/aspnetcore-kerberos/blob/LICENSE.md</LicenseUrl>
     <PackageTags>SPNEGO GSS Kerberos</PackageTags>
