@@ -18,7 +18,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Test
             if(!result.Succeeded)
                 await context.ChallengeAsync(GssAuthenticationDefaults.AuthenticationScheme);
 
-            await context.Response.WriteAsync(result.Principal.Identity.Name);
+            await context.Response.WriteAsync("ok");
         }
     }
 }

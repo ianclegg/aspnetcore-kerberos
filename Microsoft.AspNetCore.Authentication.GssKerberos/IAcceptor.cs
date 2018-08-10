@@ -12,7 +12,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Gss
     bool IsEstablished { get; }
 
     /// <summary>
-    /// The Kerberos Prinipal that was aquired during the context exchnage
+    /// The Kerberos Principal that was aquired during the context exchnage
     /// </summary>
     string Principal { get; }
 

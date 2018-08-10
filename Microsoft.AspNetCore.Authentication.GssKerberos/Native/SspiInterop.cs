@@ -89,6 +89,12 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
             out uint pfContextAttr,
             out long timeStamp);
 
+        [DllImport("secur32.Dll", CharSet = CharSet.None, SetLastError = false)]
+        public static extern int QueryContextAttributes(
+            ref SecurityHandle phContext,
+            uint ulAttribute,
+            out IntPtr pContextAttributes);
+
         [DllImport(SECUR32, ExactSpelling = true, SetLastError = true)]
         internal static extern SecurityStatus SspiFreeAuthIdentity(
             [In] IntPtr authData);

@@ -29,10 +29,10 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Test
                 .AddKerberos(options =>
                 {
                     // Use MIT Kerberos GSS (Linux / Windows)
-                    options.Acceptor = new GssAcceptor(GssCredentials.FromKeytab(servicePrincipal, CredentialUsage.Accept)); 
+                    //options.Acceptor = new GssAcceptor(GssCredentials.FromKeytab(servicePrincipal, CredentialUsage.Accept)); 
 
                     // Uncomment to use Microsoft SSPI (Windows)
-                    // options.Acceptor = new SspiAcceptor(new SspiCredentials("", "")); 
+                    options.Acceptor = new SspiAcceptor(new SspiCredentials("", "")); 
                 });
         }
 

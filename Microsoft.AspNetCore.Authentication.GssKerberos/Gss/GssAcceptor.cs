@@ -34,18 +34,15 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
         public uint Flags { get; private set; }
 
         public GssAcceptor(GssCredential credential) => 
-            acceptorCredentials = (credential.Credentials);
+            acceptorCredentials = credential.Credentials;
 
         public byte[] Accept(byte[] token)
         {
-            uint minorStatus = 0;
-            uint majorStatus = 0;
-
             using (var inputBuffer = GssBuffer.FromBytes(token))
             {
                 // decrypt and verify the incoming service ticket
-                majorStatus = gss_accept_sec_context(
-                    out minorStatus,
+                var majorStatus = gss_accept_sec_context(
+                    out var minorStatus,
                     ref context,
                     acceptorCredentials,
                     ref inputBuffer.Value,
