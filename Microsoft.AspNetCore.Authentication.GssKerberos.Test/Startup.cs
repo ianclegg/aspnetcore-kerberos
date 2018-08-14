@@ -32,7 +32,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Test
                     //options.Acceptor = new GssAcceptor(GssCredentials.FromKeytab(servicePrincipal, CredentialUsage.Accept)); 
 
                     // Uncomment to use Microsoft SSPI (Windows)
-                    options.Acceptor = new SspiAcceptor(new SspiCredentials("", "")); 
+                    options.Acceptor = new SspiAcceptor(new SspiCredentials()); 
                 });
         }
 

@@ -89,8 +89,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Gss
                 throw new Exception("The SSPI Negotiate package was unable to accept the supplied authentication token");
             }
 
-            IntPtr pincipalBuffer;
-            var status = SspiInterop.QueryContextAttributes(ref _context, 1, out pincipalBuffer);
+            var status = SspiInterop.QueryContextAttributes(ref _context, 1, out var pincipalBuffer);
             var username = Marshal.PtrToStringAnsi(pincipalBuffer);
 
             CompleteContext(username, outgoingToken, attributes, expiry);

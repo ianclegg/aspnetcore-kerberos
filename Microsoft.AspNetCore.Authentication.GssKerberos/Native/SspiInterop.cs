@@ -22,18 +22,22 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
         public IntPtr dwUpper;
     }
 
-    internal sealed class SafeSspiAuthDataHandle : SafeHandleZeroOrMinusOneIsInvalid {
-        public SafeSspiAuthDataHandle() : base(true) {
-        }
- 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-        protected override bool ReleaseHandle() {
-            return SspiInterop.SspiFreeAuthIdentity(handle) == SecurityStatus.OK;
-        }
-    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SEC_WINNT_AUTH_IDENTITY
+    {
+        public string User;
+        public int UserLength;
+        public string Domain;
+        public int DomainLength;
+        public string Password;
+        public int PasswordLength;
+        public uint Flags;
+    };
 
     internal static class SspiInterop
     {
+        internal const uint SEC_WINNT_AUTH_IDENTITY_UNICODE = 0x00000002;
+
         internal const uint ISC_REQ_REPLAY_DETECT = 0x00000004;
         internal const uint ISC_REQ_SEQUENCE_DETECT = 0x00000008;
         internal const uint ISC_REQ_CONNECTION = 0x00000800;
@@ -42,7 +46,10 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
 
         internal const int SECURITY_NATIVE_DREP = 0x10;
 
-        public const int SECPKG_CRED_BOTH = 2;
+        public const int SECPKG_CRED_INBOUND = 1;
+        public const int SECPKG_CRED_OUTBOUND = 2;
+        public const int SECPKG_CRED_BOTH = 3;
+        
         public const int SECURITY_STATUS_SUCCESS = 0;
         public const int SEC_E_OK = 0x0;
         public const int SEC_I_CONTINUE_NEEDED = 0x90312;
@@ -55,7 +62,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
             string pszPackage,
             int fCredentialUse,
             IntPtr PAuthenticationID,
-            SafeSspiAuthDataHandle pAuthData,
+            SEC_WINNT_AUTH_IDENTITY pAuthData,
             int pGetKeyFn,
             IntPtr pvGetKeyArgument,
             ref SecurityHandle phCredential,
@@ -95,9 +102,6 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
             uint ulAttribute,
             out IntPtr pContextAttributes);
 
-        [DllImport(SECUR32, ExactSpelling = true, SetLastError = true)]
-        internal static extern SecurityStatus SspiFreeAuthIdentity(
-            [In] IntPtr authData);
 
         [DllImport("kernel32.dll")]
         public static extern int CloseHandle(IntPtr hObject);
