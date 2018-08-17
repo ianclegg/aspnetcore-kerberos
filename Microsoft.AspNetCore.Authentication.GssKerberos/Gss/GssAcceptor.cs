@@ -143,7 +143,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
         
         public void Dispose()
         {
-            var majorStatus = gss_delete_sec_context(out var minorStatus, ref context, GSS_C_NO_BUFFER);
+            var majorStatus = gss_delete_sec_context(out var minorStatus, ref context);
             if (majorStatus != GSS_S_COMPLETE)
                 throw new GssException("The GSS provider returned an error while attempting to delete the GSS Context",
                     majorStatus, minorStatus, GssSpnegoMechOidDesc);

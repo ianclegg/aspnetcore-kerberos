@@ -9,16 +9,13 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Gss
         Accept = 2
     }
 
-    // TODO: Support Client and Server Credentials, perhaps a small fluet api?
-    // TODO: GssCredentials().FromKeytab("").AsAcceptor().WithExpiry("").Aquire();
-
     public static class GssCredentials
     {
         /// <summary>
         /// Aquires credentials for the supplied principal using the supplied password
         /// </summary>
-        /// <param name="keytab"></param>
         /// <param name="username"></param>
+        /// <param name="password"></param>
         /// <param name="usage"></param>
         /// <returns></returns>
         public static GssCredential FromPassword(string username, string password, CredentialUsage usage = CredentialUsage.Both)
@@ -44,10 +41,10 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Gss
         /// Aquires default credentials (feeling lucky)
         /// </summary>
         /// <returns></returns>
-        public static GssCredential Default()
-        {
-            throw new NotImplementedException();
-        }
+        //public static GssCredential Default()
+        //{
+        //    throw new NotImplementedException();
+        //}
     }
 
     public abstract class GssCredential : IDisposable

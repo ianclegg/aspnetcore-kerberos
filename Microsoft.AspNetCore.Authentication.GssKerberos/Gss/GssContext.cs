@@ -9,18 +9,16 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
 
         public static void main()
         {
-
-            // Generate a token
-            var initiator = new GssInitiator(
-                credential: GssCredentials.FromPassword("<username>", "<password>"),
-                spn: "<service>");
-            
-            var token = initiator.Initiate(null);
-
-            // Accept the token
-            var acceptor = new GssAcceptor(
-                credential: GssCredentials.FromKeytab("<service>", CredentialUsage.Accept));
-            acceptor.Accept(token);
+            using (var clientCredentials = GssCredentials.FromPassword("<username>", "<password>"))
+            using (var serverCredentials = GssCredentials.FromKeytab("<service>", CredentialUsage.Accept))
+            {
+                using (var initiator = new GssInitiator(credential: clientCredentials, spn: "<service>"))
+                using (var acceptor = new GssAcceptor(credential: serverCredentials))
+                {
+                    var token = initiator.Initiate(null);
+                    acceptor.Accept(token);
+                }                
+            }
         }
     }
 }

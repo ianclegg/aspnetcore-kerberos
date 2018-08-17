@@ -5,7 +5,7 @@ using static Microsoft.AspNetCore.Authentication.GssKerberos.Native.Krb5Interop;
 
 namespace Microsoft.AspNetCore.Authentication.GssKerberos.Gss
 {
-    public class GssInitiator
+    public class GssInitiator : IDisposable
     {
         private readonly IntPtr credentials;
         private readonly IntPtr gssTargetName;
@@ -35,7 +35,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Gss
             }
         }
 
-        public byte[] Initiate(Byte[] token)
+        public byte[] Initiate(byte[] token)
         {
             // If the token is null, supply a NULL pointer as the input
             var gssToken = token == null
@@ -91,6 +91,14 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Gss
                 return buffer;
             }
             return new byte[0];
+        }
+
+        public void Dispose()
+        {
+            var majorStatus = gss_delete_sec_context(out var minorStatus, ref context);
+            if (majorStatus != GSS_S_COMPLETE)
+                throw new GssException("An error occurred releasing the token buffer allocated by the GSS provider",
+                    majorStatus, minorStatus, GssSpnegoMechOidDesc);
         }
     }
 }

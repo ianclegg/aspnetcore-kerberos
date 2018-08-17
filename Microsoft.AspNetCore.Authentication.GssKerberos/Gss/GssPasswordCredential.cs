@@ -6,7 +6,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Gss
 {
     internal class GssPasswordCredential : GssCredential
     {
-        private readonly IntPtr _credentials;
+        private IntPtr _credentials;
 
         public GssPasswordCredential(string principal, string password, CredentialUsage usage)
         {
@@ -52,9 +52,15 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Gss
         }
 
         protected internal override IntPtr Credentials => _credentials;
+
         public override void Dispose()
         {
-            throw new NotImplementedException();
+            var majorStatus = gss_release_cred(out var minorStatus, ref _credentials);
+            if (majorStatus != GSS_S_COMPLETE)
+            {
+                throw new GssException("The GSS provider was unable to release the credential handle",
+                    majorStatus, minorStatus, GssNtHostBasedService);
+            }
         }
     }
 }

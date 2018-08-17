@@ -303,14 +303,13 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
 
         internal static uint gss_delete_sec_context(
             out uint minorStatus,
-            ref IntPtr contextHandle,
-            IntPtr outputToken)
+            ref IntPtr contextHandle)
         {
             return RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
            ? Environment.Is64BitProcess
-               ? Win64.gss_delete_sec_context(out minorStatus, ref contextHandle, outputToken)
-               : Win32.gss_delete_sec_context(out minorStatus, ref contextHandle, outputToken)
-           : Linux.gss_delete_sec_context(out minorStatus, ref contextHandle, outputToken);
+               ? Win64.gss_delete_sec_context(out minorStatus, ref contextHandle, GSS_C_NO_BUFFER)
+               : Win32.gss_delete_sec_context(out minorStatus, ref contextHandle, GSS_C_NO_BUFFER)
+           : Linux.gss_delete_sec_context(out minorStatus, ref contextHandle, GSS_C_NO_BUFFER);
         }
 
         internal static uint gss_release_name(
@@ -322,6 +321,17 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
                     ? Win64.gss_release_name(out minorStatus, ref inputName)
                     : Win32.gss_release_name(out minorStatus, ref inputName)
                 : Linux.gss_release_name(out minorStatus, ref inputName);
+        }
+
+        internal static uint gss_release_cred(
+            out uint minorStatus,
+            ref IntPtr credentialHandle)
+        {
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                ? Environment.Is64BitProcess
+                    ? Win64.gss_release_cred(out minorStatus, ref credentialHandle)
+                    : Win32.gss_release_cred(out minorStatus, ref credentialHandle)
+                : Linux.gss_release_cred(out minorStatus, ref credentialHandle);
         }
 
         #endregion
@@ -432,16 +442,21 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
                 out uint minorStatus,
                 ref GssBufferStruct buffer);
 
-            [DllImport(GssModulename, EntryPoint = "gss_release_buffer")]
-            internal static extern uint gss_delete_sec_context(
+            [DllImport(GssModulename, EntryPoint = "gss_release_cred")]
+            internal static extern uint gss_release_cred(
                 out uint minorStatus,
-                ref IntPtr contextHandle,
-                IntPtr outputToken);
+                ref IntPtr credentialHandle);
 
             [DllImport(GssModulename, EntryPoint = "gss_release_name")]
             internal static extern uint gss_release_name(
                 out uint minorStatus,
                 ref IntPtr inputName);
+
+            [DllImport(GssModulename, EntryPoint = "gss_delete_sec_context")]
+            internal static extern uint gss_delete_sec_context(
+                out uint minorStatus,
+                ref IntPtr contextHandle,
+                IntPtr outputToken);
         }
         #endregion
 
@@ -550,16 +565,21 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
                 out uint minorStatus,
                 ref GssBufferStruct buffer);
 
-            [DllImport(GssModulename, EntryPoint = "gss_release_buffer")]
-            internal static extern uint gss_delete_sec_context(
+            [DllImport(GssModulename, EntryPoint = "gss_release_cred")]
+            internal static extern uint gss_release_cred(
                 out uint minorStatus,
-                ref IntPtr contextHandle,
-                IntPtr outputToken);
+                ref IntPtr credentialHandle);
 
             [DllImport(GssModulename, EntryPoint = "gss_release_name")]
             internal static extern uint gss_release_name(
                 out uint minorStatus,
                 ref IntPtr inputName);
+
+            [DllImport(GssModulename, EntryPoint = "gss_delete_sec_context")]
+            internal static extern uint gss_delete_sec_context(
+                out uint minorStatus,
+                ref IntPtr contextHandle,
+                IntPtr outputToken);
         }
         #endregion
 
@@ -670,23 +690,22 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
                 out uint minorStatus,
                 ref GssBufferStruct buffer);
 
-            [DllImport(GssModulename, EntryPoint = "gss_release_buffer")]
-            internal static extern uint gss_delete_sec_context(
+            [DllImport(GssModulename, EntryPoint = "gss_release_cred")]
+            internal static extern uint gss_release_cred(
                 out uint minorStatus,
-                ref IntPtr contextHandle,
-                IntPtr outputToken);
+                ref IntPtr credentialHandle);
 
             [DllImport(GssModulename, EntryPoint = "gss_release_name")]
             internal static extern uint gss_release_name(
                 out uint minorStatus,
                 ref IntPtr inputName);
+
+            [DllImport(GssModulename, EntryPoint = "gss_delete_sec_context")]
+            internal static extern uint gss_delete_sec_context(
+                out uint minorStatus,
+                ref IntPtr contextHandle,
+                IntPtr outputToken);
         }
-        
-       
-
-
-
-
         #endregion
     }
 }

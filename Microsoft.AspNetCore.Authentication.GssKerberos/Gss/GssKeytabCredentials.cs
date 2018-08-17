@@ -6,7 +6,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Gss
 {
     public class GssKeytabCredential : GssCredential
     {
-        private readonly IntPtr _credentials;
+        private IntPtr _credentials;
 
         public GssKeytabCredential(string principal, string keytab, CredentialUsage usage, uint expiry = GSS_C_INDEFINITE)
         {
@@ -60,7 +60,12 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Gss
 
         public override void Dispose()
         {
-            throw new NotImplementedException();
+            var majorStatus = gss_release_cred(out var minorStatus, ref _credentials);
+            if (majorStatus != GSS_S_COMPLETE)
+            {
+                throw new GssException("The GSS provider was unable to release the credential handle",
+                    majorStatus, minorStatus, GssNtHostBasedService);
+            }
         }
     }
 }
