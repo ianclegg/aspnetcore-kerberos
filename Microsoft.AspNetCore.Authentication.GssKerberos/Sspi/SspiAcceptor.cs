@@ -83,20 +83,19 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Gss
                 out var attributes,
                 out var expiry);
 
-            if (result != SspiInterop.SEC_E_OK || result != SspiInterop.SEC_I_CONTINUE_NEEDED
-            )
+            if (result == SspiInterop.SEC_I_CONTINUE_NEEDED || result == SspiInterop.SEC_E_OK)
             {
-                throw new Exception("The SSPI Negotiate package was unable to accept the supplied authentication token");
+                var status = SspiInterop.QueryContextAttributes(ref _context, 1, out var pincipalBuffer);
+                var username = Marshal.PtrToStringAnsi(pincipalBuffer);
+
+                CompleteContext(username, outgoingToken, attributes, expiry);
+
+                return outgoingToken.Buffers
+                    .FirstOrDefault(buffer => buffer.BufferType == SecurityBufferType.SECBUFFER_TOKEN)
+                    .Buffer;
             }
 
-            var status = SspiInterop.QueryContextAttributes(ref _context, 1, out var pincipalBuffer);
-            var username = Marshal.PtrToStringAnsi(pincipalBuffer);
-
-            CompleteContext(username, outgoingToken, attributes, expiry);
-
-            return outgoingToken.Buffers
-                .FirstOrDefault(buffer => buffer.BufferType == SecurityBufferType.SECBUFFER_TOKEN)
-                .Buffer;
+            throw new Exception("The SSPI Negotiate package was unable to accept the supplied authentication token");
         }
 
         private void CompleteContext(string username , SecurityBufferDescription description, uint attributes, long expiry)

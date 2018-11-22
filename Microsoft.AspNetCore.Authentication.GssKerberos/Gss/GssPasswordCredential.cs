@@ -31,11 +31,12 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Gss
                 // attempt to obtain a TGT from the KDC using the supplied username and password
                 var actualMechanims = default(GssOidDesc);
 
+                //krb5_get_init_creds_password
                 majorStatus = gss_acquire_cred_with_password(
                     out minorStatus,
                     gssUsername,
                     ref gssPasswordBuffer.Value,
-                    0xffffffff,
+                    0,
                     ref GssSpnegoMechOidSet,
                     (int)usage,
                     ref _credentials,
