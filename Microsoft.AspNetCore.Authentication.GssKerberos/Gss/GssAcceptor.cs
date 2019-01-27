@@ -2,7 +2,6 @@
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authentication.GssKerberos.Disposables;
-using Microsoft.AspNetCore.Authentication.GssKerberos.Gss;
 
 using static Microsoft.AspNetCore.Authentication.GssKerberos.Native.Krb5Interop;
 
@@ -10,11 +9,11 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
 {
     public class GssAcceptor : IAcceptor
     {
-        private readonly IntPtr acceptorCredentials;
-        private IntPtr context;
-        private IntPtr sourceName;
-        private uint flags;
-        private uint expiryTime;
+        private readonly IntPtr _acceptorCredentials;
+        private IntPtr _context;
+        private IntPtr _sourceName;
+        private uint _flags;
+        private uint _expiryTime;
 
         public bool IsEstablished { get; private set; }
 
@@ -34,7 +33,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
         public uint Flags { get; private set; }
 
         public GssAcceptor(GssCredential credential) => 
-            acceptorCredentials = credential.Credentials;
+            _acceptorCredentials = credential.Credentials;
 
         public byte[] Accept(byte[] token)
         {
@@ -43,20 +42,20 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                 // decrypt and verify the incoming service ticket
                 var majorStatus = gss_accept_sec_context(
                     out var minorStatus,
-                    ref context,
-                    acceptorCredentials,
+                    ref _context,
+                    _acceptorCredentials,
                     ref inputBuffer.Value,
                     IntPtr.Zero,        // no support for channel binding
-                    out sourceName,
+                    out _sourceName,
                     ref GssSpnegoMechOidDesc,
                     out var output,
-                    out flags, out expiryTime, IntPtr.Zero
+                    out _flags, out _expiryTime, IntPtr.Zero
                 );
 
                 switch (majorStatus)
                 {
                     case GSS_S_COMPLETE:
-                        CompleteContext(sourceName);
+                        CompleteContext(_sourceName);
                         return MarshalOutputToken(output);
 
                     case GSS_S_CONTINUE_NEEDED:
@@ -73,11 +72,10 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
         {
             if (gssToken.length > 0)
             {
-                // Allocate a clr byte arry and copy the token data over
+                // copy the output token to a managed buffer and release the gss buffer
                 var buffer = new byte[gssToken.length];
                 Marshal.Copy(gssToken.value, buffer, 0, (int)gssToken.length);
 
-                // Finally, release the underlying gss buffer
                 var majorStatus = gss_release_buffer(out var minorStatus, ref gssToken);
                 if (majorStatus != GSS_S_COMPLETE)
                     throw new GssException("An error occurred releasing the token buffer allocated by the GSS provider",
@@ -101,19 +99,18 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                 throw new GssException("An error occurred getting the display name of the principal",
                     majorStatus, minorStatus, GssSpnegoMechOidDesc);
 
-            // Copy the display name to a CLR string
-            Flags = flags;
+            // Set the context properties on the acceptor
+            Flags = _flags;
             IsEstablished = true;
             Principal = Marshal.PtrToStringAnsi(nameBuffer.value, (int)nameBuffer.length);
 
-            // Release the GSS allocated buffer
+            // release the GSS allocated buffers
             majorStatus = gss_release_buffer(out minorStatus, ref nameBuffer);
             if (majorStatus != GSS_S_COMPLETE)
                 throw new GssException("An error occurred releasing the display name of the principal",
                     majorStatus, minorStatus, GssSpnegoMechOidDesc);
 
-            // The Windows AD-WIN2K-PAC certificate is located in the Authzdata
-            // we can get the raw authzdata and parse it, looking for the PAC
+            // The Windows AD-WIN2K-PAC certificate is located in the Authzdata we can get the raw authzdata and parse it, looking for the PAC
             // ...or use the preferred krb5_gss_get_name_attribute("urn:mspac:")
             using (var inputBuffer = GssBuffer.FromString("urn:mspac:logon-info"))
             {
@@ -143,7 +140,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
         
         public void Dispose()
         {
-            var majorStatus = gss_delete_sec_context(out var minorStatus, ref context);
+            var majorStatus = gss_delete_sec_context(out var minorStatus, ref _context);
             if (majorStatus != GSS_S_COMPLETE)
                 throw new GssException("The GSS provider returned an error while attempting to delete the GSS Context",
                     majorStatus, minorStatus, GssSpnegoMechOidDesc);

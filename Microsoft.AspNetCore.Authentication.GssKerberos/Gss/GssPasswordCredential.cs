@@ -1,8 +1,9 @@
 ﻿using System;
 using Microsoft.AspNetCore.Authentication.GssKerberos.Disposables;
+
 using static Microsoft.AspNetCore.Authentication.GssKerberos.Native.Krb5Interop;
 
-namespace Microsoft.AspNetCore.Authentication.GssKerberos.Gss
+namespace Microsoft.AspNetCore.Authentication.GssKerberos
 {
     internal class GssPasswordCredential : GssCredential
     {

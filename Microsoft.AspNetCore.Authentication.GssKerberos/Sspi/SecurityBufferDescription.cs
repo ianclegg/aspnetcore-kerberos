@@ -1,5 +1,5 @@
 ﻿// ReSharper disable InconsistentNaming
-namespace Microsoft.AspNetCore.Authentication.GssKerberos.Sspi
+namespace Microsoft.AspNetCore.Authentication.GssKerberos
 {
     enum SecurityBufferType : uint
     {

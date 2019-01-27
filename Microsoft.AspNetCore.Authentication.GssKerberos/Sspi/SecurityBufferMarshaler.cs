@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using System.Collections.Concurrent;
 using System.Threading;
 
-namespace Microsoft.AspNetCore.Authentication.GssKerberos.Sspi
+namespace Microsoft.AspNetCore.Authentication.GssKerberos
 {
     internal class SecurityBufferMarshaler : ICustomMarshaler
     {

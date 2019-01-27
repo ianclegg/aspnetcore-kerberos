@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Authentication.GssKerberos.Gss;
+﻿using System;
 
 namespace Microsoft.AspNetCore.Authentication.GssKerberos
 {
     public class GssAuthenticationOptions : AuthenticationSchemeOptions
     {
-        public IAcceptor Acceptor { get; set; }
+        public Func<IAcceptor> AcceptorFactory { get; set; }
     }
 }

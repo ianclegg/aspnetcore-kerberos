@@ -1,21 +1,24 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using Microsoft.AspNetCore.Authentication.GssKerberos.Disposables;
+
 using static Microsoft.AspNetCore.Authentication.GssKerberos.Native.Krb5Interop;
 
-namespace Microsoft.AspNetCore.Authentication.GssKerberos.Gss
+namespace Microsoft.AspNetCore.Authentication.GssKerberos
 {
     public class GssInitiator : IDisposable
     {
-        private readonly IntPtr credentials;
-        private readonly IntPtr gssTargetName;
-        private IntPtr context;
+        private IntPtr _context;
+
+        private readonly IntPtr _credentials;
+        private readonly IntPtr _gssTargetName;
+       
 
         public bool IsEstablished { get; private set; }
 
         public GssInitiator(GssCredential credential, string spn)
         {
-            credentials = credential.Credentials;
+            _credentials = credential.Credentials;
 
             using (var gssTargetNameBuffer = GssBuffer.FromString(spn))
             {
@@ -24,7 +27,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Gss
                     out var minorStatus,
                     ref gssTargetNameBuffer.Value,
                     ref GssNtPrincipalName,
-                    out gssTargetName
+                    out _gssTargetName
                 );
 
                 if (majorStatus != GSS_S_COMPLETE)
@@ -45,9 +48,9 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Gss
  
             var majorStatus = gss_init_sec_context(
                 out var minorStatus,
-                credentials,
-                ref context,
-                gssTargetName,
+                _credentials,
+                ref _context,
+                _gssTargetName,
                 ref GssSpnegoMechOidDesc,
                 0,
                 0,
@@ -95,7 +98,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Gss
 
         public void Dispose()
         {
-            var majorStatus = gss_delete_sec_context(out var minorStatus, ref context);
+            var majorStatus = gss_delete_sec_context(out var minorStatus, ref _context);
             if (majorStatus != GSS_S_COMPLETE)
                 throw new GssException("An error occurred releasing the token buffer allocated by the GSS provider",
                     majorStatus, minorStatus, GssSpnegoMechOidDesc);

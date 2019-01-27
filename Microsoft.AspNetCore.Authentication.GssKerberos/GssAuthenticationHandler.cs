@@ -12,6 +12,8 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
 {
     public class GssAuthenticationHandler : AuthenticationHandler<GssAuthenticationOptions>
     {
+        private byte[] result;
+
         private const string SchemeName = "Negotiate";
 
         public GssAuthenticationHandler(
@@ -30,8 +32,6 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
-            var acceptor = Options.Acceptor;
-
             string authorizationHeader = Request.Headers["Authorization"];
             if (string.IsNullOrEmpty(authorizationHeader))
             {
@@ -55,9 +55,9 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
             try
             {
                 var asn1ServiceTicket = Convert.FromBase64String(base64Token);
-                using (acceptor)
+                using (var acceptor = Options.AcceptorFactory())
                 {
-                    acceptor.Accept(asn1ServiceTicket);
+                    result = acceptor.Accept(asn1ServiceTicket);
                     if (acceptor.IsEstablished)
                     {
                         var ticket = new AuthenticationTicket(
@@ -67,6 +67,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
 
                         return Task.FromResult(AuthenticateResult.Success(ticket));
                     }
+
                     return Task.FromResult(AuthenticateResult.Fail("Access Denied"));
                 }
             }
@@ -78,8 +79,10 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
 
         protected override Task HandleChallengeAsync(AuthenticationProperties properties)
         {
+            var token = result == null ? null : " " + Convert.ToBase64String(result);
+
             Response.StatusCode = 401;
-            Response.Headers.Append(HeaderNames.WWWAuthenticate, "Negotiate");
+            Response.Headers.Append(HeaderNames.WWWAuthenticate, $"Negotiate{token}");
             return Task.CompletedTask;
         }
     }

@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication.GssKerberos.Gss;
-using Microsoft.AspNetCore.Authentication.GssKerberos.Sspi;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +19,12 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Test
         {
             var servicePrincipal = "<spn>";
 
+            // Aquire MIT Kerberos credentials from the systems configured Keytab
+            var serverCredentials = GssCredentials.FromKeytab(servicePrincipal, CredentialUsage.Accept);
+
+            // Uncomment to use Microsoft SSPI (Windows)
+            // var serverCredentials = new SspiCredentials();
+
             services.AddAuthentication(options =>
                     {
                         options.DefaultChallengeScheme = GssAuthenticationDefaults.AuthenticationScheme;
@@ -29,14 +33,13 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Test
                 .AddKerberos(options =>
                 {
                     // Use MIT Kerberos GSS (Linux / Windows)
-                    //options.Acceptor = new GssAcceptor(GssCredentials.FromKeytab(servicePrincipal, CredentialUsage.Accept)); 
+                    options.AcceptorFactory = () => new GssAcceptor(serverCredentials); 
 
                     // Uncomment to use Microsoft SSPI (Windows)
-                    options.Acceptor = new SspiAcceptor(new SspiCredentials()); 
+                    // options.AcceptorFactory = () => new SspiAcceptor(serverCredentials); 
                 });
         }
 
-        
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
@@ -47,7 +50,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Test
             app.UseAuthentication();
             app.Map("/ws", ws =>
             {
-              //  ws.UseWebSockets();
+                //  ws.UseWebSockets();
                 ws.UseMiddleware<CustomMiddleware>();
             });
         }
