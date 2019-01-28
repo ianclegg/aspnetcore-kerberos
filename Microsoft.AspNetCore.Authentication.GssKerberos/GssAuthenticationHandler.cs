@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Security.Principal;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication.GssKerberos.Pac;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -61,13 +64,12 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                     if (acceptor.IsEstablished)
                     {
                         var ticket = new AuthenticationTicket(
-                            new GenericPrincipal(new GenericIdentity(acceptor.Principal), new[] { "User" }),
+                            new GenericPrincipal(new GenericIdentity(acceptor.Principal), acceptor.Roles),
                             new AuthenticationProperties(),
                             GssAuthenticationDefaults.AuthenticationScheme);
 
                         return Task.FromResult(AuthenticateResult.Success(ticket));
                     }
-
                     return Task.FromResult(AuthenticateResult.Fail("Access Denied"));
                 }
             }
@@ -84,6 +86,12 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
             Response.StatusCode = 401;
             Response.Headers.Append(HeaderNames.WWWAuthenticate, $"Negotiate{token}");
             return Task.CompletedTask;
+        }
+
+        private IEnumerable<string> GetGroupMembershipSids(byte[] buffer)
+        {
+            var logonInfo = new PacLogonInfo(buffer);
+            return logonInfo.GroupSids.Select(sid => sid.Value);
         }
     }
 }

@@ -12,6 +12,27 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
         OK = 0x00000000
     }
 
+    internal enum TokenInformationClass
+    {
+        TokenUser = 1,
+        TokenGroups,
+        TokenPrivileges,
+        TokenOwner,
+        TokenPrimaryGroup,
+        TokenDefaultDacl,
+        TokenSource,
+        TokenType,
+        TokenImpersonationLevel,
+        TokenStatistics,
+        TokenRestrictedSids,
+        TokenSessionId,
+        TokenGroupsAndPrivileges,
+        TokenSessionReference,
+        TokenSandBoxInert,
+        TokenAuditPolicy,
+        TokenOrigin
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public struct SecurityHandle
     {
@@ -34,9 +55,28 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
         public uint Flags;
     };
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SID_AND_ATTRIBUTES
+    {
+        public IntPtr Sid;
+        public uint Attributes;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct TOKEN_GROUPS
+    {
+        public int GroupCount;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1)]
+        public SID_AND_ATTRIBUTES[] Groups;
+    };
+
     internal static class SspiInterop
     {
+        private const string SECUR32 = "secur32.dll";
+
         internal const uint SEC_WINNT_AUTH_IDENTITY_UNICODE = 0x00000002;
+        internal const uint SE_GROUP_LOGON_ID = 0xC0000000;
+        internal const int TokenGroups = 2;
 
         internal const uint ISC_REQ_REPLAY_DETECT = 0x00000004;
         internal const uint ISC_REQ_SEQUENCE_DETECT = 0x00000008;
@@ -56,10 +96,10 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
         public const int SEC_E_OK = 0x0;
         public const int SEC_I_CONTINUE_NEEDED = 0x90312;
         public const int SEC_I_COMPLETE_AND_CONTINUE = 0x90314;
+
+        public const int SECPKG_ATTR_ACCESS_TOKEN = 18;
+
         
-
-        private const string SECUR32 = "secur32.dll";
-
         [DllImport("secur32.dll", CharSet = CharSet.Auto, SetLastError = false)]
         public static extern int AcquireCredentialsHandle(
             IntPtr principal,
@@ -148,6 +188,20 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
             uint ulAttribute,
             IntPtr pContextAttributes);
 
+        [DllImport("advapi32.dll", SetLastError = true)]
+        public static extern bool GetTokenInformation(
+            IntPtr hToken,
+            TokenInformationClass TokenInformationClass,
+            IntPtr TokenInformation,
+            int length,
+            out int requiredLength);
+
+        // Using IntPtr for pSID instead of Byte[]
+        [DllImport("advapi32", CharSet = CharSet.Auto, SetLastError = true)]
+        public static extern bool ConvertSidToStringSid(IntPtr pSID, out IntPtr ptrSid);
+
+        [DllImport("kernel32.dll")]
+        public static extern IntPtr LocalFree(IntPtr hMem);
 
         [DllImport("kernel32.dll")]
         public static extern int CloseHandle(IntPtr hObject);

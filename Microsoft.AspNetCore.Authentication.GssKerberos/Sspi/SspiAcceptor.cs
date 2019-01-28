@@ -1,11 +1,17 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 using Microsoft.AspNetCore.Authentication.GssKerberos.Native;
 
 // ReSharper disable InconsistentNaming
 namespace Microsoft.AspNetCore.Authentication.GssKerberos
 {
+    public struct SecAccessToken
+    {
+        public IntPtr AccessToken;
+    }
     public struct SecNameInfo
     {
         public string sClientName;
@@ -29,6 +35,11 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
         /// The UPN of the context initiator
         /// </summary>
         public string Principal { get; private set; }
+
+        /// <summary>
+        /// The Groups SID's the Principal is a member of in Active Directory
+        /// </summary>
+        public string[] Roles { get; private set;}
 
         /// <summary>
         /// The final negotiated flags
@@ -90,6 +101,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                 result == SspiInterop.SEC_I_COMPLETE_AND_CONTINUE ||
                 result == SspiInterop.SEC_E_OK)
             {
+                // Query the context to obtain the display name of the principal that was authenticated
                 var nameinfo = new SecNameInfo();
                 var ptr = Marshal.AllocHGlobal(Marshal.SizeOf(nameinfo));
                 Marshal.StructureToPtr(nameinfo, ptr, false);
@@ -98,9 +110,18 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                 Console.WriteLine($"QueryContextAttributes: {status}");
                 var nameinfo2 = Marshal.PtrToStructure<SecNameInfo>(ptr);
 
-               // var username = Marshal.PtrToStringAnsi(nameinfo2.cbMaxSignature);
+                // Query the context to obtain the Win32 Access Token, this will enable us to get the list of SID's that
+                // represent group membership for the principal, we will use these to populate the Roles property
+                var accessToken = new SecAccessToken();
+                var accessTokenPtr = Marshal.AllocHGlobal(Marshal.SizeOf(accessToken));
+                Marshal.StructureToPtr(token, accessTokenPtr, false);
+                if (SspiInterop.QueryContextAttributes(ref _context, SspiInterop.SECPKG_ATTR_ACCESS_TOKEN, accessTokenPtr) != SspiInterop.SEC_E_OK)
+                {
+                    throw new Exception("Error getting the access token");
+                }
+                // need to free the buffer with FreeContextBuffer()
 
-                //CompleteContext("ok", outgoingToken, attributes, expiry);
+                CompleteContext("ok", outgoingToken, attributes, expiry, accessTokenPtr);
 
                 return outgoingToken.Buffers
                     .FirstOrDefault(buffer => buffer.BufferType == SecurityBufferType.SECBUFFER_TOKEN)
@@ -110,10 +131,37 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
             throw new Exception($"The SSPI Negotiate package was unable to accept the supplied authentication token (SSPI Status: {result})");
         }
 
-        private void CompleteContext(string username , SecurityBufferDescription description, uint attributes, long expiry)
+        private void CompleteContext(string username , SecurityBufferDescription description, uint attributes, long expiry, IntPtr token)
         {
             IsEstablished = true;
             Principal = username;
+            Roles = GetMemebershipSids(IntPtr.Zero).ToArray();
+        }
+
+        private IEnumerable<string> GetMemebershipSids(IntPtr token)
+        {
+            var length = 0;
+            if (!SspiInterop.GetTokenInformation(token, TokenInformationClass.TokenGroups, IntPtr.Zero, length,
+                out length))
+                throw new Exception("An SSPI Error Occurred getting group membership");
+
+            var buffer = Marshal.AllocHGlobal(length);
+            if (SspiInterop.GetTokenInformation(token, TokenInformationClass.TokenGroups, buffer, length, out length))
+            {
+                var groups = Marshal.PtrToStructure<TOKEN_GROUPS>(buffer);
+                var sidAndAttrSize = Marshal.SizeOf(new SID_AND_ATTRIBUTES());
+                for (var i = 0; i < groups.GroupCount; i++)
+                {
+                    var sidAndAttributes = Marshal.PtrToStructure<SID_AND_ATTRIBUTES>(
+                        new IntPtr(buffer.ToInt64() + i * sidAndAttrSize + IntPtr.Size));
+
+                    SspiInterop.ConvertSidToStringSid(sidAndAttributes.Sid, out var pstr);
+                    var sidString = Marshal.PtrToStringAuto(pstr);
+                    SspiInterop.LocalFree(pstr);
+                    yield return sidString;
+                }
+            }
+            Marshal.FreeHGlobal(buffer);
         }
 
         public void Dispose()

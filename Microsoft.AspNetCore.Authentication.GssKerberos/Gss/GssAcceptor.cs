@@ -1,8 +1,8 @@
 ﻿using System;
+using System.Linq;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authentication.GssKerberos.Disposables;
-
+using Microsoft.AspNetCore.Authentication.GssKerberos.Pac;
 using static Microsoft.AspNetCore.Authentication.GssKerberos.Native.Krb5Interop;
 
 namespace Microsoft.AspNetCore.Authentication.GssKerberos
@@ -23,9 +23,9 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
         public string Principal { get; private set; }
 
         /// <summary>
-        /// The logon-info
+        /// The Groups SID's the Principal is a member of in Active Directory
         /// </summary>
-        internal byte[] Pac { get; private set; }
+        public string[] Roles { get; private set; }
 
         /// <summary>
         /// The final negotiated flags
@@ -110,8 +110,9 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                 throw new GssException("An error occurred releasing the display name of the principal",
                     majorStatus, minorStatus, GssSpnegoMechOidDesc);
 
-            // The Windows AD-WIN2K-PAC certificate is located in the Authzdata we can get the raw authzdata and parse it, looking for the PAC
-            // ...or use the preferred krb5_gss_get_name_attribute("urn:mspac:")
+            // The Windows AD-WIN2K-PAC certificate is located in the Authzdata, MIT Kerberos provides an API to enable
+            // us to a get the decrypted bytes for well known buffers, the 'urn:mspac:logon-info' contains the group sids
+            // the principal is a member of in ActiveDirectory
             using (var inputBuffer = GssBuffer.FromString("urn:mspac:logon-info"))
             {
                 var hasMore = -1;
@@ -125,16 +126,24 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                     ref hasMore);
                 
                 if (majorStatus != GSS_S_COMPLETE)
-                    throw new GssException("An error occurred obtaining the Windows PAC data from the Kerberos Ticket",
+                    throw new GssException("An error occurred obtaining the Privilege Attribute Certificate Data (PAC) from the Kerberos Ticket",
                         majorStatus, minorStatus, GssSpnegoMechOidDesc);
-                
-                // Allocate a clr byte arry and copy the Pac data over
-                Pac = new byte[value.length];
-                Marshal.Copy(value.value, Pac, 0, (int)value.length);
 
-                // TODO: decode the structure, we can extract group membership information (SID's) from the PAC
-                AsnEncodedData d = new AsnEncodedData(Pac);
-                var data = d.Format(true);
+                // TODO: investigate the scenarios where this may occur
+                //if (authenticated == 0 || complete == 0)
+                //    throw new GssException("The Privilege Attribute Certificate Data was not authenticated or is incomplete", 0);
+                
+                // Allocate a managed buffer and copy the raw bytes of the NDR encoded logon-info strcuture
+                var pacLogonBuffer = new byte[value.length];
+                Marshal.Copy(value.value, pacLogonBuffer, 0, (int)value.length);
+
+                // Free the buffers allocated by MIT GSS
+                gss_release_buffer(out minorStatus, ref value);
+                gss_release_buffer(out minorStatus, ref displayValue);
+
+                // Decode the PAC buffer and extract the group membership SID's
+                var logoninfo = new PacLogonInfo(pacLogonBuffer);
+                Roles = logoninfo.GroupSids.Select(sid => sid.ToString()).ToArray();
             }
         }
         
