@@ -2,22 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Authentication;
 using System.Security.Principal;
 using Microsoft.AspNetCore.Authentication.GssKerberos.Native;
 
 // ReSharper disable InconsistentNaming
 namespace Microsoft.AspNetCore.Authentication.GssKerberos
 {
-    public struct SecAccessToken
-    {
-        public IntPtr AccessToken;
-    }
-    public struct SecNameInfo
-    {
-        public string sClientName;
-        public string sServerName;
-    }
-
     public class SspiAcceptor : IAcceptor
     {
         private SecurityHandle _credentials;
@@ -80,6 +71,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                 {
                     new SecurityBuffer
                     {
+                        // we need should query the sec package for them
                         Buffer = new byte[64000],
                         BufferType = SecurityBufferType.SECBUFFER_TOKEN
                     }
@@ -97,54 +89,77 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                 out var attributes,
                 out var expiry);
 
-            if (result == SspiInterop.SEC_I_CONTINUE_NEEDED ||
-                result == SspiInterop.SEC_I_COMPLETE_AND_CONTINUE ||
-                result == SspiInterop.SEC_E_OK)
+            if (result == SspiInterop.SEC_E_OK || result == SspiInterop.SEC_I_COMPLETE_AND_CONTINUE)
             {
-                // Query the context to obtain the display name of the principal that was authenticated
-                var nameinfo = new SecNameInfo();
-                var ptr = Marshal.AllocHGlobal(Marshal.SizeOf(nameinfo));
-                Marshal.StructureToPtr(nameinfo, ptr, false);
+                IsEstablished = true;
+                Principal = GetPrincipalNameFromContext(_context);
+                Roles = GetGroupMembershipFromContext(_context);
 
-                var status = SspiInterop.QueryContextAttributes(ref _context, 13, ptr);
-                Console.WriteLine($"QueryContextAttributes: {status}");
-                var nameinfo2 = Marshal.PtrToStructure<SecNameInfo>(ptr);
-
-                // Query the context to obtain the Win32 Access Token, this will enable us to get the list of SID's that
-                // represent group membership for the principal, we will use these to populate the Roles property
-                var accessToken = new SecAccessToken();
-                var accessTokenPtr = Marshal.AllocHGlobal(Marshal.SizeOf(accessToken));
-                Marshal.StructureToPtr(token, accessTokenPtr, false);
-                if (SspiInterop.QueryContextAttributes(ref _context, SspiInterop.SECPKG_ATTR_ACCESS_TOKEN, accessTokenPtr) != SspiInterop.SEC_E_OK)
+                if (result == SspiInterop.SEC_E_OK)
                 {
-                    throw new Exception("Error getting the access token");
+                    return new byte[0];
                 }
-                // need to free the buffer with FreeContextBuffer()
-
-                CompleteContext("ok", outgoingToken, attributes, expiry, accessTokenPtr);
-
+            }
+            if (result == SspiInterop.SEC_I_COMPLETE_AND_CONTINUE || result == SspiInterop.SEC_I_CONTINUE_NEEDED)
+            {
                 return outgoingToken.Buffers
                     .FirstOrDefault(buffer => buffer.BufferType == SecurityBufferType.SECBUFFER_TOKEN)
                     .Buffer;
             }
-
-            throw new Exception($"The SSPI Negotiate package was unable to accept the supplied authentication token (SSPI Status: {result})");
+            throw new AuthenticationException($"The SSPI Negotiate package was unable to accept the supplied authentication token (SSPI Status: {result})");
         }
 
-        private void CompleteContext(string username , SecurityBufferDescription description, uint attributes, long expiry, IntPtr token)
+        private static string GetPrincipalNameFromContext(SecurityHandle context)
         {
-            IsEstablished = true;
-            Principal = username;
-            Roles = GetMemebershipSids(IntPtr.Zero).ToArray();
+            // We must pass SSPI a pointer to a structure, where upon SSPI will allocate additional memory for the
+            // fields of the structure. We have to call back into SSPI to free the buffers it allocated, this code is
+            // pretty verbose, probably should be refactored
+            var name = new SecurityContextNamesBuffer();
+            var namePtr = Marshal.AllocHGlobal(Marshal.SizeOf(name));
+            Marshal.StructureToPtr(name, namePtr, false);
+            var status = SspiInterop.QueryContextAttributes(ref context, SspiInterop.SECPKG_ATTR_NATIVE_NAMES, namePtr);
+            if (status != SspiInterop.SEC_E_OK)
+            {
+                Marshal.FreeHGlobal(namePtr);
+                throw new AuthenticationException($"An unhandled exception occurred obtaining the username from the context (QueryContextAttributes returned: {status})");
+            }
+            var usernamePtr = Marshal.PtrToStructure<SecurityContextNamesBuffer>(namePtr).clientname;
+            var servernamePtr = Marshal.PtrToStructure<SecurityContextNamesBuffer>(namePtr).servername;
+            var username = Marshal.PtrToStringUni(usernamePtr);
+            SspiInterop.FreeContextBuffer(usernamePtr);
+            SspiInterop.FreeContextBuffer(servernamePtr);
+            Marshal.FreeHGlobal(namePtr);
+
+            return username;
         }
 
-        private IEnumerable<string> GetMemebershipSids(IntPtr token)
+        private static string[] GetGroupMembershipFromContext(SecurityHandle context)
+        {
+            // Query the context to obtain the Win32 Access Token, this will enable us to get the list of SID's that
+            // represent group membership for the principal, we will use these to populate the Roles property
+            var accessToken = new SecurityContextBuffer();
+            var accessTokenPtr = Marshal.AllocHGlobal(Marshal.SizeOf(accessToken));
+            Marshal.StructureToPtr(accessToken, accessTokenPtr, false);
+
+            var status = SspiInterop.QueryContextAttributes(ref context, SspiInterop.SECPKG_ATTR_ACCESS_TOKEN, accessTokenPtr);
+            if (status != SspiInterop.SEC_E_OK)
+            {
+                Marshal.FreeHGlobal(accessTokenPtr);
+                throw new AuthenticationException($"An unhandled exception occurred obtaining the access token from the context (QueryContextAttributes returned: {status})");
+            }
+            // who closes the access token, I assume when we delete the context
+            var tokenPtr = Marshal.PtrToStructure<SecurityContextBuffer>(accessTokenPtr).Buffer;
+            var groups = GetMemebershipSids(tokenPtr).ToArray();
+            Marshal.FreeHGlobal(accessTokenPtr);
+
+            return groups;
+        }
+
+        private static IEnumerable<string> GetMemebershipSids(IntPtr token)
         {
             var length = 0;
-            if (!SspiInterop.GetTokenInformation(token, TokenInformationClass.TokenGroups, IntPtr.Zero, length,
-                out length))
-                throw new Exception("An SSPI Error Occurred getting group membership");
-
+            SspiInterop.GetTokenInformation(token, TokenInformationClass.TokenGroups, IntPtr.Zero, length, out length);
+            
             var buffer = Marshal.AllocHGlobal(length);
             if (SspiInterop.GetTokenInformation(token, TokenInformationClass.TokenGroups, buffer, length, out length))
             {
@@ -160,6 +175,10 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                     SspiInterop.LocalFree(pstr);
                     yield return sidString;
                 }
+            }
+            else
+            {
+                throw new AuthenticationException($"An unhandled exception occurred obtaining group membership from the context (Win32 error {Marshal.GetLastWin32Error()})");
             }
             Marshal.FreeHGlobal(buffer);
         }

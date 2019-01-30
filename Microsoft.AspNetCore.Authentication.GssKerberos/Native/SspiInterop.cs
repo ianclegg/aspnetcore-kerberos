@@ -40,6 +40,17 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
         public UIntPtr dwUpper;
     }
 
+    public struct SecurityContextBuffer
+    {
+        public IntPtr Buffer;
+    }
+
+    public struct SecurityContextNamesBuffer
+    {
+        public IntPtr clientname;
+        public IntPtr servername;
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public struct SEC_WINNT_AUTH_IDENTITY
     {
@@ -97,6 +108,8 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
         public const int SEC_I_CONTINUE_NEEDED = 0x90312;
         public const int SEC_I_COMPLETE_AND_CONTINUE = 0x90314;
 
+        public const int SECPKG_ATTR_NAMES = 1;
+        public const int SECPKG_ATTR_NATIVE_NAMES = 13;
         public const int SECPKG_ATTR_ACCESS_TOKEN = 18;
 
         
@@ -202,6 +215,10 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
 
         [DllImport("kernel32.dll")]
         public static extern IntPtr LocalFree(IntPtr hMem);
+
+        [DllImport(SECUR32, ExactSpelling=true, SetLastError=true)]
+        internal static extern int FreeContextBuffer(
+            [In] IntPtr contextBuffer);
 
         [DllImport("kernel32.dll")]
         public static extern int CloseHandle(IntPtr hObject);
