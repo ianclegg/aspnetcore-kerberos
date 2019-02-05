@@ -10,9 +10,8 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
         private IntPtr _credentials;
         private IntPtr _gssUsername;
 
+        protected internal override IntPtr Credentials => _credentials;
 
-        //GSS Major: (65536x8) An unsupported mechanism was requested
-        //SS Minor: (0x8) Unknown error
         public GssPasswordCredential(string principal, string password, CredentialUsage usage)
         {
             uint minorStatus = 0;
@@ -33,10 +32,9 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                     throw new GssException("The GSS provider was unable to import the supplied principal name",
                         majorStatus, minorStatus, GssNtHostBasedService);
 
-                // attempt to obtain a TGT from the KDC using the supplied username and password
+                // allocate storage for the actual mech oid
                 var actualMechanims = default(GssOidDesc);
 
-                //krb5_get_init_creds_password
                 majorStatus = gss_acquire_cred_with_password(
                     out minorStatus,
                     _gssUsername,
@@ -54,14 +52,19 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
             }
         }
 
-        protected internal override IntPtr Credentials => _credentials;
-
         public override void Dispose()
         {
-            // release the gss_name allocated by gss, the gss_buffer we allocated is free'd by the using block
-            gss_release_name(out var _, ref _gssUsername);
+            uint minorStatus = 0;
+            uint majorStatus = 0;
 
-            var majorStatus = gss_release_cred(out var minorStatus, ref _credentials);
+            majorStatus = gss_release_name(out minorStatus, ref _gssUsername);
+            if (majorStatus != GSS_S_COMPLETE)
+            {
+                throw new GssException("The GSS provider was unable to release the princpal name handle",
+                    majorStatus, minorStatus, GssNtHostBasedService);
+            }
+
+            majorStatus = gss_release_cred(out minorStatus, ref _credentials);
             if (majorStatus != GSS_S_COMPLETE)
             {
                 throw new GssException("The GSS provider was unable to release the credential handle",

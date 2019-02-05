@@ -8,6 +8,9 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
     public class GssKeytabCredential : GssCredential
     {
         private IntPtr _credentials;
+        private IntPtr _acceptorName;
+
+        protected internal override IntPtr Credentials => _credentials;
 
         public GssKeytabCredential(string principal, string keytab, CredentialUsage usage, uint expiry = GSS_C_INDEFINITE)
         {
@@ -57,11 +60,19 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
             }
         }
 
-        protected internal override IntPtr Credentials => _credentials;
-
         public override void Dispose()
         {
-            var majorStatus = gss_release_cred(out var minorStatus, ref _credentials);
+            uint minorStatus = 0;
+            uint majorStatus = 0;
+
+            majorStatus = gss_release_name(out minorStatus, ref _acceptorName);
+            if (majorStatus != GSS_S_COMPLETE)
+            {
+                throw new GssException("The GSS provider was unable to release the princpal name handle",
+                    majorStatus, minorStatus, GssNtHostBasedService);
+            }
+
+            majorStatus = gss_release_cred(out minorStatus, ref _credentials);
             if (majorStatus != GSS_S_COMPLETE)
             {
                 throw new GssException("The GSS provider was unable to release the credential handle",
