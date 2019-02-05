@@ -149,6 +149,14 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
         
         public void Dispose()
         {
+            if (_sourceName != IntPtr.Zero)
+            {
+                var majorStatus = gss_release_name(out var minorStatus, ref _sourceName);
+                if (majorStatus != GSS_S_COMPLETE)
+                    throw new GssException("An error occurred releasing the gss source name",
+                        majorStatus, minorStatus, GssSpnegoMechOidDesc);
+            }
+
             if (_context != IntPtr.Zero)
             {
                 var majorStatus = gss_delete_sec_context(out var minorStatus, ref _context);
@@ -156,8 +164,6 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                     throw new GssException("The GSS provider returned an error while attempting to delete the GSS Context",
                         majorStatus, minorStatus, GssSpnegoMechOidDesc);
             }
-
-
         }
     }
 }
