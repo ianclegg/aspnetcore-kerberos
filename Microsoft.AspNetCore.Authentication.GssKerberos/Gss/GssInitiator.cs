@@ -9,10 +9,8 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
     public class GssInitiator : IDisposable
     {
         private IntPtr _context;
-
-        private readonly IntPtr _credentials;
-        private readonly IntPtr _gssTargetName;
-       
+        private IntPtr _credentials;
+        private IntPtr _gssTargetName;
 
         public bool IsEstablished { get; private set; }
 
@@ -44,8 +42,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
             var gssToken = token == null
                 ? Disposable.From(default(GssBufferStruct))
                 : GssBuffer.FromBytes(token);
-            
- 
+
             var majorStatus = gss_init_sec_context(
                 out var minorStatus,
                 _credentials,
@@ -98,12 +95,21 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
 
         public void Dispose()
         {
-            if (_context == IntPtr.Zero) return;
+            if (_gssTargetName != IntPtr.Zero)
+            {
+                var majorStatus = gss_release_name(out var minorStatus, ref _gssTargetName);;
+                if (majorStatus != GSS_S_COMPLETE)
+                    throw new GssException("An error occurred releasing the gss service principal name",
+                        majorStatus, minorStatus, GssSpnegoMechOidDesc);
+            }
 
-            var majorStatus = gss_delete_sec_context(out var minorStatus, ref _context);
-            if (majorStatus != GSS_S_COMPLETE)
-                throw new GssException("An error occurred releasing the token buffer allocated by the GSS provider",
-                    majorStatus, minorStatus, GssSpnegoMechOidDesc);
+            if (_context != IntPtr.Zero)
+            {
+                var majorStatus = gss_delete_sec_context(out var minorStatus, ref _context);
+                if (majorStatus != GSS_S_COMPLETE)
+                    throw new GssException("An error occurred releasing the token buffer allocated by the GSS provider",
+                        majorStatus, minorStatus, GssSpnegoMechOidDesc);
+            }
         }
     }
 }
