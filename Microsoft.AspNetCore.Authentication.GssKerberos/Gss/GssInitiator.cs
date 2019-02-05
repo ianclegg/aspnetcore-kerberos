@@ -100,7 +100,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                 var majorStatus = gss_release_name(out var minorStatus, ref _gssTargetName);;
                 if (majorStatus != GSS_S_COMPLETE)
                     throw new GssException("An error occurred releasing the gss service principal name",
-                        majorStatus, minorStatus, GssSpnegoMechOidDesc);
+                        majorStatus, minorStatus, GssNtHostBasedService);
             }
 
             if (_context != IntPtr.Zero)

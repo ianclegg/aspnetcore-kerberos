@@ -8,7 +8,11 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
     internal class GssPasswordCredential : GssCredential
     {
         private IntPtr _credentials;
+        private IntPtr _gssUsername;
 
+
+        //GSS Major: (65536x8) An unsupported mechanism was requested
+        //SS Minor: (0x8) Unknown error
         public GssPasswordCredential(string principal, string password, CredentialUsage usage)
         {
             uint minorStatus = 0;
@@ -23,7 +27,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                     out minorStatus,
                     ref gssUsernameBuffer.Value,
                     ref GssNtPrincipalName,
-                    out var gssUsername
+                    out _gssUsername
                 );
                 if (majorStatus != GSS_S_COMPLETE)
                     throw new GssException("The GSS provider was unable to import the supplied principal name",
@@ -35,7 +39,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                 //krb5_get_init_creds_password
                 majorStatus = gss_acquire_cred_with_password(
                     out minorStatus,
-                    gssUsername,
+                    _gssUsername,
                     ref gssPasswordBuffer.Value,
                     0,
                     ref GssSpnegoMechOidSet,
@@ -43,9 +47,6 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                     ref _credentials,
                     ref actualMechanims,
                     out var actualExpiry);
-
-                // release the gss_name allocated by gss, the gss_buffer we allocated is free'd by the using block
-                gss_release_name(out var _, ref gssUsername);
 
                 if (majorStatus != GSS_S_COMPLETE)
                     throw new GssException("The GSS Provider was unable aquire credentials for authentication",
@@ -57,6 +58,9 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
 
         public override void Dispose()
         {
+            // release the gss_name allocated by gss, the gss_buffer we allocated is free'd by the using block
+            gss_release_name(out var _, ref _gssUsername);
+
             var majorStatus = gss_release_cred(out var minorStatus, ref _credentials);
             if (majorStatus != GSS_S_COMPLETE)
             {

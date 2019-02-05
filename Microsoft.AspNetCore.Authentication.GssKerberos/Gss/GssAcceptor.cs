@@ -154,7 +154,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                 var majorStatus = gss_release_name(out var minorStatus, ref _sourceName);
                 if (majorStatus != GSS_S_COMPLETE)
                     throw new GssException("An error occurred releasing the gss source name",
-                        majorStatus, minorStatus, GssSpnegoMechOidDesc);
+                        majorStatus, minorStatus, GssNtHostBasedService);
             }
 
             if (_context != IntPtr.Zero)
