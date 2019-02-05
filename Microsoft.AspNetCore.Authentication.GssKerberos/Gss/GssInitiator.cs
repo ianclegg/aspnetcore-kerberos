@@ -72,7 +72,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                     return MarshalOutputToken(output);
 
                 default:
-                    throw new GssException("The GSS Provider was unable to generate the supplied authentication token",
+                    throw new GssException("The GSS Provider was unable to generate the token from the supplied credentials",
                         majorStatus, minorStatus, GssSpnegoMechOidDesc);
             }
         }

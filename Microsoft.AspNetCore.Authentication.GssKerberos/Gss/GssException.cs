@@ -24,8 +24,8 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
             var majorMessage = TranslateMajorStatusCode(majorStatus);
             var minorMessage = TranslateMinorStatusCode(minorStatus ,oid);
             return $"{message}{Environment.NewLine}" +
-                   $"GSS Major: {majorMessage}{Environment.NewLine}" +
-                   $"GSS Minor: {minorMessage}";
+                   $"GSS Major: ({majorStatus:0x8}) {majorMessage}{Environment.NewLine}" +
+                   $"GSS Minor: ({minorStatus:0x8}) {minorMessage}";
         }
 
         private static string TranslateMajorStatusCode(uint status)
