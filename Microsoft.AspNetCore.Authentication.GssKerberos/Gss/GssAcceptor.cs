@@ -37,10 +37,6 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
 
         public byte[] Accept(byte[] token)
         {
-            var mechBytes = new byte[GssSpnegoMechOidDesc.length];
-            Marshal.Copy(GssSpnegoMechOidDesc.elements, mechBytes, 0, (int) GssSpnegoMechOidDesc.length);
-            Console.WriteLine("Accepting with Mechanism: " + BitConverter.ToString(mechBytes));
-
             using (var inputBuffer = GssBuffer.FromBytes(token))
             {
                 // decrypt and verify the incoming service ticket
@@ -51,7 +47,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                     ref inputBuffer.Value,
                     IntPtr.Zero,        // no support for channel binding
                     out _sourceName,
-                    ref GssSpnegoMechOidDesc,
+                    IntPtr.Zero,        // dont specify any mechs, which means we don't know the final mech
                     out var output,
                     out _flags, out _expiryTime, IntPtr.Zero
                 );
