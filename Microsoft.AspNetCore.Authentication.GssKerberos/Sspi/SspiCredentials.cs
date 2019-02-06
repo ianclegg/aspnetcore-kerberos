@@ -29,8 +29,6 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
             }
 
             Credentials = _credentials;
-            Console.WriteLine(_credentials.dwLower);
-            Console.WriteLine(_credentials.dwUpper);
         }
 
         public SspiCredentials(string principal, string username, string password, string domain)

@@ -33,20 +33,6 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                     throw new GssException("The GSS provider was unable to import the supplied principal name",
                         majorStatus, minorStatus, GssNtHostBasedService);
 
-                var oids = new GssOidDesc[GssSpnegoMechOidSet.count];
-                var sizeOfOid = Marshal.SizeOf(typeof(GssOidDesc));
-                for (var i = 0; i < GssSpnegoMechOidSet.count; i++)
-                {
-                    oids[i] = Marshal.PtrToStructure<GssOidDesc>(GssSpnegoMechOidSet.elements + sizeOfOid * i);
-                }
-                foreach (var mechanism in oids)
-                {
-                    var mechBytes = new byte[mechanism.length];
-                    Marshal.Copy(mechanism.elements, mechBytes, 0, (int)mechanism.length);
-                    Console.WriteLine("Requesting Credential Mechanism: " + BitConverter.ToString(mechBytes));
-                }
-
-                var actualMechanimsPtr = IntPtr.Zero;
                 majorStatus = gss_acquire_cred_with_password(
                     out minorStatus,
                     _gssUsername,
@@ -55,30 +41,8 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                     ref GssSpnegoMechOidSet,
                     (int)usage,
                     ref _credentials,
-                    ref actualMechanimsPtr,
+                    IntPtr.Zero,            // dont't mind when mechs we got
                     out var actualExpiry);
-
-                if (actualMechanimsPtr != IntPtr.Zero)
-                {
-                    var actualMechanims = Marshal.PtrToStructure<GssOidSet>(actualMechanimsPtr);
-                    Console.WriteLine("Got credentials for " + actualMechanims.count + "mechanisms");
-                    var actualOids = new GssOidDesc[actualMechanims.count];
-                    for (var i = 0; i < actualMechanims.count; i++)
-                    {
-                        actualOids[i] = Marshal.PtrToStructure<GssOidDesc>(actualMechanims.elements + sizeOfOid * i);
-                    }
-
-                    foreach (var mechanism in actualOids)
-                    {
-                        var mechBytes = new byte[mechanism.length];
-                        Marshal.Copy(mechanism.elements, mechBytes, 0, (int) mechanism.length);
-                        Console.WriteLine("Got Credential for Mechanism" + BitConverter.ToString(mechBytes));
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("Got no mechs");
-                }
 
                 if (majorStatus != GSS_S_COMPLETE)
                     throw new GssException("The GSS Provider was unable aquire credentials for authentication",
