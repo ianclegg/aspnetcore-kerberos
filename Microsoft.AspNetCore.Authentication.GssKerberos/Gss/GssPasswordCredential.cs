@@ -33,7 +33,13 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                     throw new GssException("The GSS provider was unable to import the supplied principal name",
                         majorStatus, minorStatus, GssNtHostBasedService);
 
-                foreach (var mechanism in GssSpnegoMechOidSet.elements)
+                var oids = new GssOidDesc[GssSpnegoMechOidSet.count];
+                var sizeOfOid = Marshal.SizeOf(typeof(GssOidDesc));
+                for (var i = 0; i < GssSpnegoMechOidSet.count; i++)
+                {
+                    oids[i] = Marshal.PtrToStructure<GssOidDesc>(GssSpnegoMechOidSet.elements + sizeOfOid * i);
+                }
+                foreach (var mechanism in oids)
                 {
                     var mechBytes = new byte[mechanism.length];
                     Marshal.Copy(mechanism.elements, mechBytes, 0, (int)mechanism.length);
@@ -54,7 +60,13 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                     ref actualMechanims,
                     out var actualExpiry);
 
-                foreach (var mechanism in actualMechanims.elements)
+                var oids2 = new GssOidDesc[actualMechanims.count];
+                var sizeOfOid2 = Marshal.SizeOf(typeof(GssOidDesc));
+                for (var i = 0; i < actualMechanims.count; i++)
+                {
+                    oids2[i] = Marshal.PtrToStructure<GssOidDesc>(actualMechanims.elements + sizeOfOid2 * i);
+                }
+                foreach (var mechanism in oids2)
                 {
                     var mechBytes = new byte[mechanism.length];
                     Marshal.Copy(mechanism.elements, mechBytes, 0, (int)mechanism.length);
