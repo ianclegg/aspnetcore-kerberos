@@ -39,7 +39,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
 
                 // use the name to attempt to obtain the servers credentials, this is usually from a keytab file. The
                 // server credentials are required to decrypt and verify incoming service tickets
-                var actualMechanims = default(GssOidDesc);
+                var actualMechanims = IntPtr.Zero;
 
                 majorStatus = gss_acquire_cred(
                     out minorStatus,
