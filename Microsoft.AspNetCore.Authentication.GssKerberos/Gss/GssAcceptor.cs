@@ -37,6 +37,10 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
 
         public byte[] Accept(byte[] token)
         {
+            var mechBytes = new byte[GssSpnegoMechOidDesc.length];
+            Marshal.Copy(GssSpnegoMechOidDesc.elements, mechBytes, 0, (int) GssSpnegoMechOidDesc.length);
+            Console.WriteLine("Accepting with Mechanism: " + BitConverter.ToString(mechBytes));
+
             using (var inputBuffer = GssBuffer.FromBytes(token))
             {
                 // decrypt and verify the incoming service ticket

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using Microsoft.AspNetCore.Authentication.GssKerberos.Disposables;
 
 using static Microsoft.AspNetCore.Authentication.GssKerberos.Native.Krb5Interop;
@@ -32,8 +33,15 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                     throw new GssException("The GSS provider was unable to import the supplied principal name",
                         majorStatus, minorStatus, GssNtHostBasedService);
 
+                foreach (var mechanism in GssSpnegoMechOidSet.elements)
+                {
+                    var mechBytes = new byte[mechanism.length];
+                    Marshal.Copy(mechanism.elements, mechBytes, 0, (int)mechanism.length);
+                    Console.WriteLine("Requesting Credential Mechanism" + BitConverter.ToString(mechBytes));
+                }
+
                 // allocate storage for the actual mech oid
-                var actualMechanims = default(GssOidDesc);
+                var actualMechanims = default(GssOidSet);
 
                 majorStatus = gss_acquire_cred_with_password(
                     out minorStatus,
@@ -45,6 +53,13 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                     ref _credentials,
                     ref actualMechanims,
                     out var actualExpiry);
+
+                foreach (var mechanism in actualMechanims.elements)
+                {
+                    var mechBytes = new byte[mechanism.length];
+                    Marshal.Copy(mechanism.elements, mechBytes, 0, (int)mechanism.length);
+                    Console.WriteLine("Got Credential ofr Mechanism" + BitConverter.ToString(mechBytes));
+                }
 
                 if (majorStatus != GSS_S_COMPLETE)
                     throw new GssException("The GSS Provider was unable aquire credentials for authentication",

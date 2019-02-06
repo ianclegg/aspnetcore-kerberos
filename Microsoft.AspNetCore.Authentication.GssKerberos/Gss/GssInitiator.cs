@@ -43,6 +43,11 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                 ? Disposable.From(default(GssBufferStruct))
                 : GssBuffer.FromBytes(token);
 
+          
+            var mechBytes = new byte[GssSpnegoMechOidDesc.length];
+            Marshal.Copy(GssSpnegoMechOidDesc.elements, mechBytes, 0, (int) GssSpnegoMechOidDesc.length);
+            Console.WriteLine("Initiating with Mechanism: " + BitConverter.ToString(mechBytes));
+
             var majorStatus = gss_init_sec_context(
                 out var minorStatus,
                 _credentials,
