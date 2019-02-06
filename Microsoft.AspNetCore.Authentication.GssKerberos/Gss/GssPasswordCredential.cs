@@ -43,12 +43,10 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                 {
                     var mechBytes = new byte[mechanism.length];
                     Marshal.Copy(mechanism.elements, mechBytes, 0, (int)mechanism.length);
-                    Console.WriteLine("Requesting Credential Mechanism" + BitConverter.ToString(mechBytes));
+                    Console.WriteLine("Requesting Credential Mechanism: " + BitConverter.ToString(mechBytes));
                 }
 
-                // allocate storage for the actual mech oid
-                var actualMechanims = default(GssOidSet);
-
+                var actualMechanimsPtr = IntPtr.Zero;
                 majorStatus = gss_acquire_cred_with_password(
                     out minorStatus,
                     _gssUsername,
@@ -57,20 +55,29 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
                     ref GssSpnegoMechOidSet,
                     (int)usage,
                     ref _credentials,
-                    ref actualMechanims,
+                    ref actualMechanimsPtr,
                     out var actualExpiry);
 
-                var oids2 = new GssOidDesc[actualMechanims.count];
-                var sizeOfOid2 = Marshal.SizeOf(typeof(GssOidDesc));
-                for (var i = 0; i < actualMechanims.count; i++)
+                if (actualMechanimsPtr != IntPtr.Zero)
                 {
-                    oids2[i] = Marshal.PtrToStructure<GssOidDesc>(actualMechanims.elements + sizeOfOid2 * i);
+                    var actualMechanims = Marshal.PtrToStructure<GssOidSet>(actualMechanimsPtr);
+                    Console.WriteLine("Got credentials for " + actualMechanims.count + "mechanisms");
+                    var actualOids = new GssOidDesc[actualMechanims.count];
+                    for (var i = 0; i < actualMechanims.count; i++)
+                    {
+                        actualOids[i] = Marshal.PtrToStructure<GssOidDesc>(actualMechanims.elements + sizeOfOid * i);
+                    }
+
+                    foreach (var mechanism in actualOids)
+                    {
+                        var mechBytes = new byte[mechanism.length];
+                        Marshal.Copy(mechanism.elements, mechBytes, 0, (int) mechanism.length);
+                        Console.WriteLine("Got Credential for Mechanism" + BitConverter.ToString(mechBytes));
+                    }
                 }
-                foreach (var mechanism in oids2)
+                else
                 {
-                    var mechBytes = new byte[mechanism.length];
-                    Marshal.Copy(mechanism.elements, mechBytes, 0, (int)mechanism.length);
-                    Console.WriteLine("Got Credential ofr Mechanism" + BitConverter.ToString(mechBytes));
+                    Console.WriteLine("Got no mechs");
                 }
 
                 if (majorStatus != GSS_S_COMPLETE)

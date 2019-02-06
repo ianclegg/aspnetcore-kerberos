@@ -133,17 +133,17 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
             ref GssOidSet desiredMechanisms,
             int credentialUsage,
             ref IntPtr credentialHandle,
-            ref GssOidDesc acutualMech,
+            ref IntPtr actualMech,
             out uint expiryTime)
         {
             return RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                 ? Environment.Is64BitProcess
                     ? Win64.gss_acquire_cred(out minorStatus, desiredName, timeRequired, ref desiredMechanisms,
-                        credentialUsage, ref credentialHandle, ref acutualMech, out expiryTime)
+                        credentialUsage, ref credentialHandle, ref actualMech, out expiryTime)
                     : Win32.gss_acquire_cred(out minorStatus, desiredName, timeRequired, ref desiredMechanisms,
-                        credentialUsage, ref credentialHandle, ref acutualMech, out expiryTime)
+                        credentialUsage, ref credentialHandle, ref actualMech, out expiryTime)
                 : Linux.gss_acquire_cred(out minorStatus, desiredName, timeRequired, ref desiredMechanisms,
-                    credentialUsage, ref credentialHandle, ref acutualMech, out expiryTime);
+                    credentialUsage, ref credentialHandle, ref actualMech, out expiryTime);
         }
 
         internal static uint gss_acquire_cred_with_password(
@@ -154,7 +154,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
             ref GssOidSet desiredMechanisms,
             int credentialUsage,
             ref IntPtr credentialHandle,
-            ref GssOidSet actualMechs,
+            ref IntPtr actualMechs,
             out uint expiryTime)
         {
             return RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
@@ -353,7 +353,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
                 ref GssOidSet desiredMechanisms,
                 int credentialUsage,
                 ref IntPtr credentialHandle,
-                ref GssOidDesc acutualMech,
+                ref IntPtr actualMech,
                 out uint expiryTime);
 
             [DllImport(GssModulename, EntryPoint = "gss_acquire_cred_with_password")]
@@ -365,7 +365,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
                 ref GssOidSet desiredMechanisms,
                 int credentialUsage,
                 ref IntPtr credentialHandle,
-                ref GssOidSet acutualMechs,
+                ref IntPtr actualMechs,
                 out uint expiryTime);
 
             [DllImport(GssModulename, EntryPoint = "gss_inquire_name")]
@@ -476,7 +476,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
                 ref GssOidSet desiredMechanisms,
                 int credentialUsage,
                 ref IntPtr credentialHandle,
-                ref GssOidDesc acutualMech,
+                ref IntPtr actualMechs,
                 out uint expiryTime);
 
             [DllImport(GssModulename, EntryPoint = "gss_acquire_cred_with_password")]
@@ -488,7 +488,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
                 ref GssOidSet desiredMechanisms,
                 int credentialUsage,
                 ref IntPtr credentialHandle,
-                ref GssOidSet acutualMech,
+                ref IntPtr actualMech,
                 out uint expiryTime);
 
             [DllImport(GssModulename, EntryPoint = "gss_inquire_name")]
@@ -601,7 +601,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
                 ref GssOidSet desiredMechanisms,
                 int credentialUsage,
                 ref IntPtr credentialHandle,
-                ref GssOidDesc acutualMech,
+                ref IntPtr actualMech,
                 out uint expiryTime);
 
             [DllImport(GssModulename, EntryPoint = "gss_acquire_cred_with_password")]
@@ -613,7 +613,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
                 ref GssOidSet desiredMechanisms,
                 int credentialUsage,
                 ref IntPtr credentialHandle,
-                ref GssOidSet acutualMechs,
+                ref IntPtr actualMechs,
                 out uint expiryTime);
 
             [DllImport(GssModulename, EntryPoint = "gss_inquire_name")]
