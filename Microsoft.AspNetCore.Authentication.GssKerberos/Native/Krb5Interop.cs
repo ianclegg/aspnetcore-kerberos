@@ -68,33 +68,25 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
         internal static GssOidSet GssSpnegoMechOidSet = new GssOidSet
         {
             count = 1,
-            elementsPtr = GCHandle.Alloc(GssSpnegoMechOidDesc, GCHandleType.Pinned).AddrOfPinnedObject()
+            elements = GCHandle.Alloc(GssSpnegoMechOidDesc, GCHandleType.Pinned).AddrOfPinnedObject()
         };
         #endregion
 
         #region GSS Structures
-        [StructLayout(LayoutKind.Explicit)]
+
+        [StructLayout(LayoutKind.Sequential)]
         public struct GssOidSet
         {
-            [FieldOffset(0)]
             internal uint count;
 
-            
-            [FieldOffset(4)]
-            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)]
-            internal GssOidDesc[] elements;
-
-            [FieldOffset(4)]
-            internal IntPtr elementsPtr;
+            internal IntPtr elements;
         }
-        
-        [StructLayout(LayoutKind.Explicit)]
+
+        [StructLayout(LayoutKind.Sequential)]
         public struct GssOidDesc
         {
-            [FieldOffset(0)]
             internal uint length;
 
-            [FieldOffset(4)]
             internal IntPtr elements;
         }
         
