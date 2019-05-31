@@ -1,5 +1,5 @@
 ﻿---
-version: 0.1.{build}-beta
+version: 1.0.{build}
 branches:
   only:
     - master
