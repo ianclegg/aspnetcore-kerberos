@@ -141,12 +141,12 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
         public static extern int AcceptSecurityContext(
             ref SecurityHandle phCredential,
             ref SecurityHandle phContext,
-            [In, Out][MarshalAs(UnmanagedType.CustomMarshaler, MarshalCookie = "input", MarshalTypeRef = typeof(SecurityBufferMarshaler))]
+            [In,Out][MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(SecurityBufferMarshaler))]
             SecurityBufferDescription pInput,
             uint fContextReq,
             uint TargetDataRep,
             ref SecurityHandle phNewContext,
-            [In, Out][MarshalAs(UnmanagedType.CustomMarshaler, MarshalCookie = "output", MarshalTypeRef = typeof(SecurityBufferMarshaler))]
+            [In,Out][MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(SecurityBufferMarshaler))]
             SecurityBufferDescription pOutput,
             out uint pfContextAttr,
             out long timeStamp);
@@ -159,7 +159,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
             uint fContextReq,
             uint TargetDataRep,
             ref SecurityHandle phNewContext,
-            [In, Out][MarshalAs(UnmanagedType.CustomMarshaler, MarshalCookie = "output", MarshalTypeRef = typeof(SecurityBufferMarshaler))]
+            [In, Out][MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(SecurityBufferMarshaler))]
             SecurityBufferDescription pOutput,
             out uint pfContextAttr,
             out long timeStamp);
@@ -168,12 +168,12 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
         public static extern int AcceptSecurityContext(
             ref SecurityHandle phCredential,
             IntPtr phContext,
-            [In, Out][MarshalAs(UnmanagedType.CustomMarshaler, MarshalCookie = "input", MarshalTypeRef = typeof(SecurityBufferMarshaler))]
+            [In,Out][MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(SecurityBufferMarshaler))]
             SecurityBufferDescription pInput,
             uint fContextReq,
             uint TargetDataRep,
             ref SecurityHandle phNewContext,
-            [In, Out][MarshalAs(UnmanagedType.CustomMarshaler, MarshalCookie = "output", MarshalTypeRef = typeof(SecurityBufferMarshaler))]
+            [In, Out][MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(SecurityBufferMarshaler))]
             SecurityBufferDescription pOutput,
             out uint pfContextAttr,
             out long timeStamp);
@@ -189,7 +189,7 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos.Native
             IntPtr pInput,
             int Reserved2,
             ref SecurityHandle phNewContext,
-            [In, Out][MarshalAs(UnmanagedType.CustomMarshaler, MarshalCookie = "output", MarshalTypeRef = typeof(SecurityBufferMarshaler))]
+            [In, Out][MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(SecurityBufferMarshaler))]
             SecurityBufferDescription pOutput,
             out uint pfContextAttr,
             out long timeStamp);
