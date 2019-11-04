@@ -75,7 +75,8 @@ namespace Microsoft.AspNetCore.Authentication.GssKerberos
             }
             catch (Exception ex)
             {
-                throw new Exception("Authentication Failed", ex);
+                Logger.LogDebug(ex, "An exception occurred while processing the authentication token");
+                return Task.FromResult(AuthenticateResult.Fail("Access Denied"));
             }
         }
 
